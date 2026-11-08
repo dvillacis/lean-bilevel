@@ -40,8 +40,10 @@ slide pages), DD = [Dempe–Dutta 2012].
 | D Def 4.3 | upper / local Lipschitz continuity of set-valued maps | ☐ | | compare `VariationalAnalysis.LipschitzLikeAt` |
 | D Thm 4.4 | strong stability under (MFCQ), (SSOC) [Kojima] | ☐ | | |
 | D Sect. 4.3–4.4, Thm 4.5–4.13 | `PC¹` functions, directional differentiability of local solution functions (SSOC, CRCQ) | ☐ | | |
-| D Thm 4.14 | value function locally Lipschitz under (C), (MFCQ) | ☐ | | |
-| D Thm 4.15–4.17 | Dini directional derivatives, directional differentiability and Clarke generalized gradient of the value function | ☐ | | 4.17 needs Clarke calculus |
+| D Thm 4.14 | value function locally Lipschitz under (C), (MFCQ) | ✓ | `exists_lipschitzOnWith_lowerValue_of_locallyBoundedAt` | (C) replaced by continuity of `g` and local boundedness of `G`; via [Mordukhovich 2018, Thm. 4.3] and `lipschitzLikeAt_lowerFeasible` |
+| D Thm 4.15–4.16 | Dini directional derivatives and directional differentiability of the value function | ☐ | | |
+| D Thm 4.17 | `∂̄φ(y⁰) ⊆ co ⋃ ∇L` (4.27) | ✓ | `clarkeSubdiff_lowerValue_subset`, `exists_clarkeSubdiff_lowerValue_subset`, `lagrangianGradients`; limiting version `subdiff_lowerValue_subset_iUnion` | via `∂̄μ = co ∂μ` (`VariationalAnalysis.clarkeSubdiff_eq_convexHull`) and [Mordukhovich 2018, Thm. 4.1(ii)] |
+| D Cor 4.5–4.7 | equality in (4.27) under (LICQ) or convexity | ☐ | | |
 
 ## D Ch. 5.4–5.5 / S "Single-level reformulations": the KKT reformulation
 
