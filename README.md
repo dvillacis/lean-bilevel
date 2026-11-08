@@ -1,7 +1,7 @@
 # lean-bilevel
 
 A Lean 4 library of results on bilevel optimization in finite dimensions, built on
-[lean-variational](../lean-variational) (a formalization of [Mordukhovich 2018]) and Mathlib.
+[lean-variational](https://github.com/dvillacis/lean-variational) (a formalization of [Mordukhovich 2018]) and Mathlib.
 
 The optimality conditions of [Mordukhovich 2018, Ch. 6] (value function approach, partial calmness,
 weak sharp minima, Thm. 6.21 and 6.23) live in lean-variational
@@ -26,8 +26,8 @@ D = [Dempe 2002]. `ROADMAP.md` lists the statements of the sources with their Le
 
 ## Building
 
-The package depends on `../lean-variational` by path (the bilevel part of lean-variational is on
-its branch `mordukhovich-ch6`).
+The package depends on [lean-variational](https://github.com/dvillacis/lean-variational) at a
+pinned commit (see `lakefile.toml`), which in turn pins Mathlib.
 
 ```
 lake build
