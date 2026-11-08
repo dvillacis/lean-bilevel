@@ -10,7 +10,7 @@ relaxedAutoImplicit = false
 [[require]]
 name = "variationalanalysis"
 git = "https://github.com/dvillacis/lean-variational"
-rev = "239d9eeaf42a24e6f2be0788f6324e5a426cdbd6"
+rev = "b9d7e4f47db7baaa72825a47c9fc03067038dede"
 
 [[lean_lib]]
 name = "BilevelOptimization"

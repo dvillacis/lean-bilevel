@@ -3,6 +3,7 @@ Copyright (c) 2026 David Villacís. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Author: David Villacís
 -/
+import VariationalAnalysis.Analysis.Motzkin
 import VariationalAnalysis.Subdifferential.Clarke
 import VariationalAnalysis.Optimality.Programming
 import VariationalAnalysis.Optimality.BilevelSmooth
@@ -25,7 +26,6 @@ terms of Clarke's generalized gradient `∂̄`.
 
 ## Main results
 
-* `exists_multipliers_of_not_exists_direction`: Motzkin's theorem of the alternative.
 * `nonsmoothMFCQ_iff_abnormalMultipliers_eq`: Thm. 5.18 of [Dempe 2002]: (NMFCQ) holds iff
   `Λ⁰(z) = {0}`.
 * `NonsmoothLICQ.nonsmoothMFCQ`: (NLICQ) implies (NMFCQ).
@@ -35,11 +35,10 @@ terms of Clarke's generalized gradient `∂̄`.
 * `exists_kkt_clarke_of_abnormalMultipliers_eq`, `exists_kkt_clarke_of_nonsmoothMFCQ`: the KKT
   form under (NMFCQ).
 
-## Clarke calculus
+## Implementation notes
 
-* `clarkeSubdiff_comp_fst`: `∂̄(ψ ∘ fst)(x, y) = ∂̄ψ(x) × {0}`.
-* `clarkeSubdiff_add_eq_of_hasStrictFDerivAt`: `∂̄(f + g)(x) = ∇f(x) + ∂̄g(x)` for `f` strictly
-  differentiable at `x` and `g` Lipschitz around `x`.
+The proof of Thm. 5.18 uses Motzkin's theorem of the alternative
+(`VariationalAnalysis.exists_multipliers_of_not_exists_direction`).
 
 ## Remarks on the book
 
@@ -54,191 +53,6 @@ open scoped NNReal Pointwise
 open VariationalAnalysis (clarkeDeriv clarkeSubdiff subdiff)
 
 namespace Bilevel
-
-/-! ### Clarke calculus -/
-
-section Clarke
-
-variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
-  [NormedSpace ℝ F]
-
-theorem clarkeDeriv_zero (f : E → ℝ) (x₀ : E) : clarkeDeriv f x₀ 0 = 0 := by
-  simp only [clarkeDeriv, smul_zero, add_zero, sub_self, zero_div, EReal.coe_zero]
-  exact limsup_const 0
-
-theorem clarkeDeriv_comp_fst (ψ : E → ℝ) (p v : E × F) :
-    clarkeDeriv (fun q : E × F ↦ ψ q.1) p v = clarkeDeriv ψ p.1 v.1 := by
-  have hfun : (fun q : (E × F) × ℝ ↦ (((ψ (q.1 + q.2 • v).1 - ψ q.1.1) / q.2 : ℝ) : EReal)) =
-      (fun r : E × ℝ ↦ (((ψ (r.1 + r.2 • v.1) - ψ r.1) / r.2 : ℝ) : EReal)) ∘
-        fun q ↦ (q.1.1, q.2) := by
-    funext q
-    simp
-  have hmap : map (fun q : (E × F) × ℝ ↦ (q.1.1, q.2)) (𝓝 p ×ˢ 𝓝[>] 0) =
-      𝓝 p.1 ×ˢ 𝓝[>] (0 : ℝ) := by
-    have := (prod_map_map_eq (f₁ := 𝓝 p) (f₂ := 𝓝[>] (0 : ℝ)) (m₁ := Prod.fst)
-      (m₂ := id)).symm
-    rwa [map_fst_nhds, map_id] at this
-  unfold clarkeDeriv
-  rw [hfun, limsup_comp, hmap]
-
-/-- The generalized gradient of `ψ ∘ fst` is `∂̄ψ × {0}`. -/
-theorem clarkeSubdiff_comp_fst (ψ : E → ℝ) (p : E × F) :
-    clarkeSubdiff (fun q : E × F ↦ ψ q.1) p =
-      (fun u : StrongDual ℝ E ↦ u.comp (ContinuousLinearMap.fst ℝ E F)) '' clarkeSubdiff ψ p.1 := by
-  ext ξ
-  simp only [clarkeSubdiff, mem_ofPred_eq, mem_image, clarkeDeriv_comp_fst]
-  constructor
-  · intro h
-    have h0 : ∀ w : F, ξ (0, w) = 0 := fun w ↦ by
-      have h1 := h (0, w)
-      have h2 := h (0, -w)
-      simp only [clarkeDeriv_zero, EReal.coe_nonpos] at h1 h2
-      have : ξ (0, -w) = -ξ (0, w) := by rw [← map_neg]; simp
-      linarith
-    refine ⟨ξ.comp (ContinuousLinearMap.inl ℝ E F), fun w ↦ by simpa using h (w, 0), ?_⟩
-    refine ContinuousLinearMap.ext fun v ↦ ?_
-    have hv : ξ v = ξ (v.1, 0) + ξ (0, v.2) := by rw [← map_add]; simp
-    simp [hv, h0]
-  · rintro ⟨u, hu, rfl⟩ v
-    simpa using hu v.1
-
-omit [NormedSpace ℝ E] in
-theorem lipschitzOnWith_neg {f : E → ℝ} {U : Set E} {K : ℝ≥0} (hf : LipschitzOnWith K f U) :
-    LipschitzOnWith K (fun x ↦ -f x) U :=
-  LipschitzOnWith.of_dist_le_mul fun x hx y hy ↦ by
-    rw [dist_neg_neg]
-    exact hf.dist_le_mul x hx y hy
-
-variable [FiniteDimensional ℝ E]
-
-/-- `∂̄(f + g)(x₀) = ∇f(x₀) + ∂̄g(x₀)` if `f` is strictly differentiable at `x₀` and `g` is
-Lipschitz around `x₀`. -/
-theorem clarkeSubdiff_add_eq_of_hasStrictFDerivAt {f g : E → ℝ} {f' : StrongDual ℝ E} {x₀ : E}
-    (hf : HasStrictFDerivAt f f' x₀) {U : Set E} {L : ℝ≥0} (hU : U ∈ 𝓝 x₀)
-    (hg : LipschitzOnWith L g U) :
-    clarkeSubdiff (fun x ↦ f x + g x) x₀ = {f'} + clarkeSubdiff g x₀ := by
-  obtain ⟨K, V, hV, hK⟩ := hf.exists_lipschitzOnWith
-  refine subset_antisymm ?_ ?_
-  · have := VariationalAnalysis.clarkeSubdiff_add_subset hV hK hU hg
-    rwa [VariationalAnalysis.clarkeSubdiff_eq_singleton_of_hasStrictFDerivAt hf] at this
-  · rintro x ⟨a', ha', ξ, hξ, hx⟩
-    rw [mem_singleton_iff] at ha'
-    simp only at hx
-    rw [← hx, ha']
-    have hfg : LipschitzOnWith (K + L) (fun x ↦ f x + g x) (V ∩ U) :=
-      (hK.mono inter_subset_left).add (hg.mono inter_subset_right)
-    have h := VariationalAnalysis.clarkeSubdiff_add_subset (inter_mem hV hU) hfg hV
-      (lipschitzOnWith_neg hK)
-    have hg' : (fun x ↦ (f x + g x) + -f x) = g := by funext x; ring
-    rw [hg', VariationalAnalysis.clarkeSubdiff_neg,
-      VariationalAnalysis.clarkeSubdiff_eq_singleton_of_hasStrictFDerivAt hf, neg_singleton] at h
-    obtain ⟨a, ha, b, hb, hab⟩ := h hξ
-    rw [mem_singleton_iff] at hb
-    simp only at hab
-    subst hb
-    have : f' + ξ = a := by rw [← hab]; abel
-    rw [this]
-    exact ha
-
-/-- `∂̄(φ - μ ∘ fst)(p) = ∇φ(p) - ∂̄μ(p.1) × {0}` for `φ` strictly differentiable at `p` and `μ`
-Lipschitz around `p.1`. -/
-theorem clarkeSubdiff_sub_comp_fst [FiniteDimensional ℝ F] {φ : E × F → ℝ}
-    {φ' : StrongDual ℝ (E × F)} {p : E × F} (hφ : HasStrictFDerivAt φ φ' p) {μ : E → ℝ}
-    {U : Set E} {L : ℝ≥0} (hU : U ∈ 𝓝 p.1) (hL : LipschitzOnWith L μ U) :
-    clarkeSubdiff (fun q ↦ φ q - μ q.1) p =
-      {φ'} - (fun u : StrongDual ℝ E ↦ u.comp (ContinuousLinearMap.fst ℝ E F)) ''
-        clarkeSubdiff μ p.1 := by
-  have hU' : Prod.fst ⁻¹' U ∈ 𝓝 p := continuous_fst.continuousAt.preimage_mem_nhds hU
-  have hL' : LipschitzOnWith (L * 1) (fun q : E × F ↦ μ q.1) (Prod.fst ⁻¹' U) :=
-    hL.comp LipschitzWith.prod_fst.lipschitzOnWith fun _ hq ↦ hq
-  rw [show (fun q ↦ φ q - μ q.1) = fun q ↦ φ q + -μ q.1 from funext fun q ↦ sub_eq_add_neg _ _,
-    clarkeSubdiff_add_eq_of_hasStrictFDerivAt hφ hU' (lipschitzOnWith_neg hL'),
-    VariationalAnalysis.clarkeSubdiff_neg, clarkeSubdiff_comp_fst, sub_eq_add_neg]
-
-end Clarke
-
-/-! ### Motzkin's theorem of the alternative -/
-
-section Motzkin
-
-variable {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X]
-  {I K : Type*} [Fintype I] [Fintype K]
-
-/-- Motzkin's theorem of the alternative: if the system `⟨ηᵢ, d⟩ < 0` (`i ∈ A`), `⟨ξₖ, d⟩ = 0`
-has no solution, then `∑ λᵢ ηᵢ + ∑ μₖ ξₖ = 0` for some `λ ≥ 0`, `λ ≠ 0`, supported on `A`. -/
-theorem exists_multipliers_of_not_exists_direction (η : I → StrongDual ℝ X)
-    (ξ : K → StrongDual ℝ X) (A : Set I)
-    (h : ¬ ∃ d : X, (∀ i ∈ A, η i d < 0) ∧ ∀ k, ξ k d = 0) :
-    ∃ lam : I → ℝ, ∃ μ : K → ℝ, (∀ i, 0 ≤ lam i) ∧ (∀ i ∉ A, lam i = 0) ∧ lam ≠ 0 ∧
-      ∑ i, lam i • η i + ∑ k, μ k • ξ k = 0 := by
-  classical
-  rcases A.eq_empty_or_nonempty with hA | ⟨i₀, hi₀⟩
-  · exact absurd ⟨0, by simp [hA], by simp⟩ h
-  by_contra hne
-  push Not at hne
-  set Δ : Set (I → ℝ) := {lam | (∀ i, 0 ≤ lam i) ∧ (∀ i ∉ A, lam i = 0) ∧ ∑ i, lam i = 1}
-  set T : (I → ℝ) → StrongDual ℝ X := fun lam ↦ ∑ i, lam i • η i
-  set S₂ : Submodule ℝ (StrongDual ℝ X) := Submodule.span ℝ (range ξ)
-  set S : Set (StrongDual ℝ X) := T '' Δ + (S₂ : Set (StrongDual ℝ X))
-  -- `Δ` is a compact convex set and `S` is closed and convex
-  have hΔc : Convex ℝ Δ := by
-    rintro a ⟨ha0, haA, ha1⟩ b ⟨hb0, hbA, hb1⟩ s t hs ht hst
-    refine ⟨fun i ↦ ?_, fun i hi ↦ ?_, ?_⟩
-    · simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul]
-      have := ha0 i
-      have := hb0 i
-      positivity
-    · simp [haA i hi, hbA i hi]
-    · simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, Finset.sum_add_distrib,
-        ← Finset.mul_sum, ha1, hb1, mul_one, hst]
-  have hΔcl : IsClosed Δ := by
-    have : Δ = (⋂ i, {lam : I → ℝ | 0 ≤ lam i}) ∩ (⋂ i ∈ Aᶜ, {lam : I → ℝ | lam i = 0}) ∩
-        {lam | ∑ i, lam i = 1} := by
-      ext lam
-      simp [Δ, and_assoc]
-    rw [this]
-    exact ((isClosed_iInter fun i ↦ isClosed_le continuous_const (continuous_apply i)).inter
-      (isClosed_biInter fun i _ ↦ isClosed_eq (continuous_apply i) continuous_const)).inter
-      (isClosed_eq (continuous_finsetSum _ fun i _ ↦ continuous_apply i) continuous_const)
-  have hΔk : IsCompact Δ :=
-    (isCompact_univ_pi fun _ ↦ isCompact_Icc).of_isClosed_subset hΔcl
-      fun lam ⟨h0, _, h1⟩ i _ ↦
-        ⟨h0 i, h1 ▸ Finset.single_le_sum (fun j _ ↦ h0 j) (Finset.mem_univ i)⟩
-  have hTc : Continuous T := continuous_finsetSum _ fun i _ ↦ (continuous_apply i).smul continuous_const
-  have hTl : IsLinearMap ℝ T :=
-    ⟨fun a b ↦ by simp [T, add_smul, Finset.sum_add_distrib],
-      fun c a ↦ by simp [T, Finset.smul_sum, smul_smul]⟩
-  have hSconv : Convex ℝ S := (hΔc.is_linear_image hTl).add S₂.convex
-  have hScl : IsClosed S := S₂.closed_of_finiteDimensional.add_left_of_isCompact (hΔk.image hTc)
-  -- `0 ∉ S`
-  have h0 : (0 : StrongDual ℝ X) ∉ S := by
-    rintro ⟨_, ⟨lam, ⟨hl0, hlA, hl1⟩, rfl⟩, b, hb, hsum⟩
-    obtain ⟨μ, rfl⟩ := (Submodule.mem_span_range_iff_exists_fun ℝ).1 hb
-    exact hne lam μ hl0 hlA (fun hl ↦ by simp [hl] at hl1) hsum
-  -- separation
-  obtain ⟨f, u, hf0, hfS⟩ := geometric_hahn_banach_point_closed hSconv hScl h0
-  obtain ⟨d, rfl⟩ := VariationalAnalysis.inclusionInDoubleDual_surjective f
-  simp only [map_zero, NormedSpace.dual_def] at hf0 hfS
-  have hmem : ∀ lam ∈ Δ, ∀ μ : K → ℝ, T lam + ∑ k, μ k • ξ k ∈ S := fun lam hl μ ↦
-    ⟨T lam, ⟨lam, hl, rfl⟩, _, (Submodule.mem_span_range_iff_exists_fun ℝ).2 ⟨μ, rfl⟩, rfl⟩
-  have hsingle : ∀ i ∈ A, (Pi.single i 1 : I → ℝ) ∈ Δ := fun i hi ↦
-    ⟨fun j ↦ by rw [Pi.single_apply]; split_ifs <;> norm_num,
-      fun j hj ↦ by rw [Pi.single_apply, if_neg (fun h : j = i ↦ hj (h ▸ hi))], by simp⟩
-  have hTs : ∀ i, T (Pi.single i 1) = η i := fun i ↦ by
-    simp [T]
-  have hη : ∀ i ∈ A, u < η i d := fun i hi ↦ by
-    simpa [hTs] using hfS _ (hmem _ (hsingle i hi) 0)
-  have hξ : ∀ k, ξ k d = 0 := fun k ↦ by
-    by_contra hk
-    have key := hfS _ (hmem _ (hsingle i₀ hi₀) (Pi.single k ((u - η i₀ d - 1) / ξ k d)))
-    simp only [hTs, Pi.single_apply, ite_smul, zero_smul, Finset.sum_ite_eq',
-      Finset.mem_univ, if_true, add_apply, smul_apply,
-      smul_eq_mul] at key
-    rw [div_mul_cancel₀ _ hk] at key
-    linarith
-  exact h ⟨-d, fun i hi ↦ by simp only [map_neg]; linarith [hη i hi], fun k ↦ by simp [hξ k]⟩
-
-end Motzkin
 
 /-! ### Constraint qualifications and abnormal multipliers -/
 
@@ -330,7 +144,7 @@ theorem nonsmoothMFCQ_iff_abnormalMultipliers_eq [FiniteDimensional ℝ X]
       exact congrFun this k
     · by_contra hd
       obtain ⟨lam, μ, hl0, hlA, hlne, hs⟩ :=
-        exists_multipliers_of_not_exists_direction η' ξ {i | G i z = 0} (by
+        VariationalAnalysis.exists_multipliers_of_not_exists_direction η' ξ {i | G i z = 0} (by
           rintro ⟨d, hd1, hd2⟩
           refine hd ⟨d, fun i hi ↦ ?_, hd2⟩
           have := hd1 i hi

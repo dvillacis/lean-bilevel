@@ -154,7 +154,7 @@ theorem exists_abnormalMultiplier_valueConstraints (hy₀ : y₀ ∈ lowerSoluti
   have hS0 : fderiv ℝ φ (x₀, y₀) - u.comp (fst ℝ E F) ∈
       clarkeSubdiff (valueConstraints φ g h μ none) (x₀, y₀) := by
     show _ ∈ clarkeSubdiff (fun q ↦ φ q - μ q.1) (x₀, y₀)
-    rw [clarkeSubdiff_sub_comp_fst (hφ.hasStrictFDerivAt one_ne_zero) hU hL]
+    rw [VariationalAnalysis.clarkeSubdiff_sub_comp_fst (hφ.hasStrictFDerivAt one_ne_zero) hU hL]
     exact ⟨_, mem_singleton _, _, ⟨u, hu, rfl⟩, rfl⟩
   refine ⟨(fun k ↦ k.elim 1 (Sum.elim lam 0), 0), ⟨?_, ?_, ?_⟩, ?_⟩
   · rintro (_ | i | j)
@@ -291,7 +291,7 @@ theorem exists_fritzJohn_valueFunction (hgc : ∀ i, Continuous (g i)) (hφc : C
     exists_fritzJohn_clarke hz₀ hmin' hfL hGL (fun e ↦ e.elim)
   rw [eq_of_mem_clarkeSubdiff_of_contDiffAt hf hζ] at hsum
   have hη0 : η none ∈ clarkeSubdiff (fun q ↦ φ q - μ q.1) (x₀, y₀) := hη none
-  rw [clarkeSubdiff_sub_comp_fst ((hφ y₀ hy₀).hasStrictFDerivAt one_ne_zero) hU hL] at hη0
+  rw [VariationalAnalysis.clarkeSubdiff_sub_comp_fst ((hφ y₀ hy₀).hasStrictFDerivAt one_ne_zero) hU hL] at hη0
   obtain ⟨_, rfl, _, ⟨u, hu, rfl⟩, hηu⟩ := hη0
   have hηi : ∀ i, η (some (Sum.inl i)) = fderiv ℝ (g i) (x₀, y₀) := fun i ↦
     eq_of_mem_clarkeSubdiff_of_contDiffAt (hg y₀ hy₀ i) (hη (some (Sum.inl i)))
@@ -396,7 +396,7 @@ theorem exists_kkt_valueFunction (hgc : ∀ i, Continuous (g i)) (hφc : Continu
     (hf.hasStrictFDerivAt one_ne_zero).add ((hφ₀.hasStrictFDerivAt one_ne_zero).const_mul κ)
   have hζ' : ζ ∈ {fderiv ℝ f (x₀, y₀) + κ • fderiv ℝ φ (x₀, y₀)} -
       (fun v : StrongDual ℝ E ↦ v.comp (fst ℝ E F)) '' clarkeSubdiff (fun x ↦ κ * μ x) x₀ := by
-    rw [← clarkeSubdiff_sub_comp_fst (φ := fun p ↦ f p + κ * φ p) (μ := fun x ↦ κ * μ x)
+    rw [← VariationalAnalysis.clarkeSubdiff_sub_comp_fst (φ := fun p ↦ f p + κ * φ p) (μ := fun x ↦ κ * μ x)
       (p := (x₀, y₀)) hΦs hU (VariationalAnalysis.lipschitzOnWith_const_mul hL κ)]
     exact hζ
   rw [VariationalAnalysis.clarkeSubdiff_const_mul hU hL] at hζ'
