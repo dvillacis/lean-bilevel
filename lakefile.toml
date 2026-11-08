@@ -1,0 +1,15 @@
+name = "bileveloptimization"
+version = "0.1.0"
+defaultTargets = ["BilevelOptimization"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+relaxedAutoImplicit = false
+
+[[require]]
+name = "variationalanalysis"
+path = "../lean-variational"
+
+[[lean_lib]]
+name = "BilevelOptimization"
