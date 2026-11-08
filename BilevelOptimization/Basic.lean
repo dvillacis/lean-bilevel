@@ -23,7 +23,9 @@ problem is `min_y {φ(x, y) | y ∈ K(x)}` (5.1) with solution map `Ψ = solutio
 * `optimisticValue f φ K`, `pessimisticValue f φ K`: `φ_o` (5.4) and `φ_p` (5.7), with values in
   `EReal` (`φ_o(x) = +∞` and `φ_p(x) = -∞` when `Ψ(x) = ∅`).
 * `IsLocalOptimisticSolution`, `IsOptimisticSolution`: Def. 5.2.
-* `IsLocalPessimisticSolution`, `IsPessimisticSolution`: Def. 5.3.
+* `solvableSet φ K Ω`: the leader's choices `x ∈ Ω` with `Ψ(x) ≠ ∅`.
+* `IsLocalPessimisticSolution`, `IsPessimisticSolution`: Def. 5.3, minimizing `φ_p` over
+  `solvableSet φ K Ω`.
 * `bilevelFeasible φ K Ω`: the feasible set `{(x, y) | x ∈ Ω, y ∈ Ψ(x)}` of (5.5).
 * `lowerOptimalSet f φ K Ω`: the lower optimal solutions (5.8).
 
@@ -42,6 +44,9 @@ problem is `min_y {φ(x, y) | y ∈ K(x)}` (5.1) with solution map `Ψ = solutio
   exists while no pessimistic solution does [Dempe 2002, Example on pp. 129, 134].
 
 ## Remarks on the book
+
+* In (5.6) `φ_p` is only meaningful where `Ψ(x) ≠ ∅`; with the convention `sup ∅ = -∞` we
+  minimize over `solvableSet φ K Ω`. (For `φ_o`, `inf ∅ = +∞` makes this unnecessary.)
 
 * In the Example on p. 134 the displayed formulas for `φ_o` and `φ_p` have the sign of the
   parameter swapped (they correspond to `Ψ(y) = Argmin_x {xy : 0 ≤ x ≤ 1}`); with
@@ -82,10 +87,16 @@ def IsOptimisticSolution (x₀ : E) (y₀ : F) : Prop :=
   x₀ ∈ Ω ∧ y₀ ∈ solutionMap φ K x₀ ∧ (∀ y ∈ solutionMap φ K x₀, f (x₀, y₀) ≤ f (x₀, y)) ∧
     IsMinOn (optimisticValue f φ K) Ω x₀
 
-/-- A global pessimistic solution [Dempe 2002, Def. 5.3]. -/
+/-- The leader's choices for which the follower's problem is solvable,
+`{x ∈ Ω | Ψ(x) ≠ ∅}`; the pessimistic problem (5.6) minimizes `φ_p` over this set. -/
+def solvableSet : Set E :=
+  {x | x ∈ Ω ∧ (solutionMap φ K x).Nonempty}
+
+/-- A global pessimistic solution [Dempe 2002, Def. 5.3]. Since `φ_p(x) = -∞` when
+`Ψ(x) = ∅`, the minimum is taken over `solvableSet φ K Ω`. -/
 def IsPessimisticSolution (x₀ : E) (y₀ : F) : Prop :=
   x₀ ∈ Ω ∧ y₀ ∈ solutionMap φ K x₀ ∧ (∀ y ∈ solutionMap φ K x₀, f (x₀, y) ≤ f (x₀, y₀)) ∧
-    IsMinOn (pessimisticValue f φ K) Ω x₀
+    IsMinOn (pessimisticValue f φ K) (solvableSet φ K Ω) x₀
 
 /-- The lower optimal solutions `{(x, y) | x ∈ Ω, y ∈ Ψ(x), f(x, y) ≤ inf_{z ∈ Ω} φ_p(z)}`
 [Dempe 2002, (5.8)]. -/
@@ -99,10 +110,11 @@ def IsLocalOptimisticSolution (x₀ : E) (y₀ : F) : Prop :=
   x₀ ∈ Ω ∧ y₀ ∈ solutionMap φ K x₀ ∧ (∀ y ∈ solutionMap φ K x₀, f (x₀, y₀) ≤ f (x₀, y)) ∧
     IsLocalMinOn (optimisticValue f φ K) Ω x₀
 
-/-- A local pessimistic solution [Dempe 2002, Def. 5.3]. -/
+/-- A local pessimistic solution [Dempe 2002, Def. 5.3], with the minimum taken over
+`solvableSet φ K Ω`. -/
 def IsLocalPessimisticSolution (x₀ : E) (y₀ : F) : Prop :=
   x₀ ∈ Ω ∧ y₀ ∈ solutionMap φ K x₀ ∧ (∀ y ∈ solutionMap φ K x₀, f (x₀, y) ≤ f (x₀, y₀)) ∧
-    IsLocalMinOn (pessimisticValue f φ K) Ω x₀
+    IsLocalMinOn (pessimisticValue f φ K) (solvableSet φ K Ω) x₀
 
 end Definitions
 
@@ -326,15 +338,18 @@ theorem not_isPessimisticSolution_example (x₀ y₀ : ℝ) :
     have hy0 : (0 : ℝ) ∈ solutionMap φ exK x₀ :=
       ⟨⟨le_rfl, zero_le_one⟩, fun z hz ↦ by simp only [φ, mul_zero, neg_zero]; nlinarith [hz.1]⟩
     have h1 := le_pessimisticValue (f := f) hy0
-    have h2 := hmin (show x₀ / 2 ∈ Icc (-1 : ℝ) 1 from
-      ⟨by linarith [hx₀.1], by linarith⟩)
+    have h2 := hmin (show x₀ / 2 ∈ solvableSet φ exK (Icc (-1 : ℝ) 1) from
+      ⟨⟨by linarith [hx₀.1], by linarith⟩, 0, ⟨le_rfl, zero_le_one⟩, fun z hz ↦ by
+        simp only [φ, mul_zero, neg_zero]; nlinarith [hz.1]⟩)
     have h3 := hneg (x₀ / 2) (by linarith)
     have := EReal.coe_le_coe_iff.1 (h1.trans (h2.trans h3))
     simp only [f] at this
     nlinarith
   · -- `x₀ ≥ 0`: `φ_p(x₀) ≥ 1 + x₀² ≥ 1 > 1/4 ≥ φ_p(-1/2)`
     have h1 := le_pessimisticValue (f := f) (one_mem_exΨ' hx)
-    have h2 := hmin (show (-1 / 2 : ℝ) ∈ Icc (-1 : ℝ) 1 from ⟨by norm_num, by norm_num⟩)
+    have h2 := hmin (show (-1 / 2 : ℝ) ∈ solvableSet φ exK (Icc (-1 : ℝ) 1) from
+      ⟨⟨by norm_num, by norm_num⟩, 0, ⟨le_rfl, zero_le_one⟩, fun z hz ↦ by
+        simp only [φ, mul_zero, neg_zero]; nlinarith [hz.1]⟩)
     have h3 := hneg (-1 / 2) (by norm_num)
     have := EReal.coe_le_coe_iff.1 (h1.trans (h2.trans h3))
     simp only [f] at this

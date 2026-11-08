@@ -199,20 +199,28 @@ theorem lowerPLI_of_slaterAt (hconv : ∀ i, ConvexOn ℝ univ (fun z ↦ g i (x
   funext i
   exact (mul_eq_zero.1 (hterm i (Finset.mem_univ i))).resolve_right (hw i).ne
 
-/-- The KKT conditions are necessary for optimality in the follower's problem under positive
-linear independence of the active gradients (no convexity), via the normal cone to `C¹`
+/-- The KKT conditions are necessary for local optimality in the follower's problem under
+positive linear independence of the active gradients (no convexity), via the normal cone to `C¹`
 inequality systems [Mordukhovich 2018, Exercise 2.51(ii)]. -/
+theorem exists_isLowerKKT_of_isLocalMinOn [FiniteDimensional ℝ F]
+    (hy : y ∈ lowerFeasible g x) (hmin : IsLocalMinOn (fun z ↦ φ (x, z)) (lowerFeasible g x) y)
+    (hφ : DifferentiableAt ℝ (fun z ↦ φ (x, z)) y)
+    (hg : ∀ i, ContDiffAt ℝ 1 (fun z ↦ g i (x, z)) y) (hreg : LowerPLI g x y) :
+    ∃ lam, IsLowerKKT φ g x y lam := by
+  have hN := VariationalAnalysis.regularNormalCone_subset_normalCone
+    (VariationalAnalysis.neg_mem_regularNormalCone_of_hasFDerivAt hφ.hasFDerivAt hmin hy)
+  obtain ⟨lam, hlam, hcs, heq⟩ :=
+    VariationalAnalysis.normalCone_le_zero_subset (g := fun i z ↦ g i (x, z)) hg hy hreg hN
+  exact ⟨lam, hy, hlam, hcs, by rw [← heq, add_neg_cancel]⟩
+
+/-- The KKT conditions are necessary for optimality in the follower's problem under positive
+linear independence of the active gradients (no convexity). -/
 theorem exists_isLowerKKT_of_mem_solutionMap [FiniteDimensional ℝ F]
     (hy : y ∈ solutionMap φ (lowerFeasible g) x) (hφ : DifferentiableAt ℝ (fun z ↦ φ (x, z)) y)
     (hg : ∀ i, ContDiffAt ℝ 1 (fun z ↦ g i (x, z)) y) (hreg : LowerPLI g x y) :
-    ∃ lam, IsLowerKKT φ g x y lam := by
-  have hmin : IsLocalMinOn (fun z ↦ φ (x, z)) {z | ∀ i, g i (x, z) ≤ 0} y :=
-    IsMinOn.localize (isMinOn_iff.2 fun z hz ↦ hy.2 z hz)
-  have hN := VariationalAnalysis.regularNormalCone_subset_normalCone
-    (VariationalAnalysis.neg_mem_regularNormalCone_of_hasFDerivAt hφ.hasFDerivAt hmin hy.1)
-  obtain ⟨lam, hlam, hcs, heq⟩ :=
-    VariationalAnalysis.normalCone_le_zero_subset (g := fun i z ↦ g i (x, z)) hg hy.1 hreg hN
-  exact ⟨lam, hy.1, hlam, hcs, by rw [← heq, add_neg_cancel]⟩
+    ∃ lam, IsLowerKKT φ g x y lam :=
+  exists_isLowerKKT_of_isLocalMinOn hy.1 (IsMinOn.localize (isMinOn_iff.2 fun z hz ↦ hy.2 z hz))
+    hφ hg hreg
 
 /-- For a convex follower's problem with `C¹` constraints satisfying Slater's condition, the KKT
 conditions characterize the solution map. -/

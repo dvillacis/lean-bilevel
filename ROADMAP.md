@@ -16,12 +16,32 @@ slide pages), DD = [Dempe–Dutta 2012].
 | D p. 132 | global optimistic solutions = global solutions of (5.5) | ✓ | `isOptimisticSolution_iff` | no assumptions |
 | D p. 163 | local optimistic ⇒ local for (5.5) / (5.36) | ✓ | `IsLocalOptimisticSolution.isLocalMinOn` | |
 | D Ex. p. 157 | local for (5.5) ⇏ local optimistic | ✓ | `not_isLocalOptimisticSolution_example` | |
-| D Thm 5.1, 5.2 | existence of optimistic solutions | ◐ | `exists_isOptimisticSolution_of_isCompact` | abstract core; compactness of `gph Ψ` from (C) and (MFCQ) needs D Thm 4.3 |
-| D Thm 5.3 | existence of pessimistic solutions (`Ψ` l.s.c.) | ☐ | | |
+| D Thm 5.1, 5.2 | existence of optimistic solutions | ✓ | `exists_isOptimisticSolution_of_isCompact`, `exists_isOptimisticSolution`, `exists_isOptimisticSolution_of_regular` | (C) replaced by compactness of `{(x, y) \| x ∈ Ω, y ∈ K(x)}`; (MFCQ) enters through lower semicontinuity of `K` |
+| D Thm 5.3 | existence of pessimistic solutions (`Ψ` l.s.c.) | ✓ | `exists_isPessimisticSolution`, `lowerSemicontinuousAt_pessimisticValue` | `φ_p` minimized over `solvableSet` (where `Ψ ≠ ∅`); over all of `Ω` the empty-`Ψ` points give `φ_p = -∞` |
 | D Ex. pp. 129, 134; S pp. 74–84 | optimistic solution exists, pessimistic does not | ✓ | `isOptimisticSolution_example`, `not_isPessimisticSolution_example` | the book's formulas for `φ_o`, `φ_p` have the parameter's sign swapped |
 | D Ex. pp. 135–136 | position of coupling constraints matters; inactive constraints matter | ☐ | | |
 | S p. 85 | optimistic = pessimistic for unique lower-level solutions | ☐ | | |
 | S p. 42 | high-point relaxation | ☐ | | |
+
+## D Ch. 4: parametric optimization
+
+| # | Statement | Status | Lean | Notes |
+|---|---|---|---|---|
+| D Def 4.2 | upper/lower semicontinuity of set-valued maps | ✓ | `UpperHemicontinuousAt`, `LowerHemicontinuousAt` | Hausdorff–Berge (hemicontinuity) sense |
+| D Sect. 4.1 | `Ψ_loc`, `SP` | ✓ | `localSolutionMap`, `stationaryMap` | |
+| D (4.7) | `Ψ ⊆ Ψ_loc ⊆ SP` under (MFCQ); `SP = Ψ` for convex problems | ✓ | `solutionMap_subset_localSolutionMap`, `localSolutionMap_subset_stationaryMap`, `stationaryMap_subset_solutionMap` | |
+| D Thm 4.1 | (MFCQ) ⟺ `Λ(x, y)` nonempty, convex, compact | ✓ | `lowerPLI_iff_nonempty_isCompact`, `isCompact_lowerMultipliers`, `lowerPLI_of_isBounded`, `convex_lowerMultipliers` | dual (MFCQ) = positive linear independence; primal form via Gordan not formalized |
+| D Thm 4.3 | value function continuous, `Ψ` u.s.c. | ✓ | `continuousAt_marginal`, `upperHemicontinuousAt_solutionMap`, `continuousAt_lowerValue_of_regular`, `upperHemicontinuousAt_lowerSolution_of_regular` | abstract version: closed `gph K`, `K` locally uniformly bounded and l.s.c. at `x̄` |
+| — | (MFCQ) ⇒ `G(x) = {y \| g(x, y) ≤ 0}` Lipschitz-like, hence l.s.c. | ✓ | `lipschitzLikeAt_lowerFeasible`, `lowerHemicontinuousAt_lowerFeasible` | via the Mordukhovich criterion (lean-variational); `lowerPLI_iff_lowerLevelRegular` bridges the two regularity notions |
+| — | `gph Ψ` closed above points where `K` is l.s.c. | ✓ | `mem_solutionMap_of_mem_closure`, `isClosed_bilevelFeasible` | |
+| D Def 4.1 | semicontinuity of functions | ✓ | Mathlib `LowerSemicontinuousAt`, `UpperSemicontinuousAt` | |
+| D Thm 4.2 | `Λ` and `SP` u.s.c. under (C), (MFCQ) | ☐ | | |
+| D Ex. p. 73 | `Ψ_loc` not u.s.c. (`x³/3 − yx`); D Ex. p. 74: no continuous selection of `Ψ` | ☐ | | |
+| D Def 4.3 | upper / local Lipschitz continuity of set-valued maps | ☐ | | compare `VariationalAnalysis.LipschitzLikeAt` |
+| D Thm 4.4 | strong stability under (MFCQ), (SSOC) [Kojima] | ☐ | | |
+| D Sect. 4.3–4.4, Thm 4.5–4.13 | `PC¹` functions, directional differentiability of local solution functions (SSOC, CRCQ) | ☐ | | |
+| D Thm 4.14 | value function locally Lipschitz under (C), (MFCQ) | ☐ | | |
+| D Thm 4.15–4.17 | Dini directional derivatives, directional differentiability and Clarke generalized gradient of the value function | ☐ | | 4.17 needs Clarke calculus |
 
 ## D Ch. 5.4–5.5 / S "Single-level reformulations": the KKT reformulation
 
@@ -55,5 +75,5 @@ slide pages), DD = [Dempe–Dutta 2012].
 
 ## Not started
 
-D Ch. 3 (linear bilevel problems), Ch. 4 (parametric optimization), Ch. 5.2–5.3, 5.7, Ch. 7
+D Ch. 3 (linear bilevel problems), Ch. 5.2–5.3, 5.7, Ch. 7
 (regularization), Ch. 8 (discrete bilevel problems).
