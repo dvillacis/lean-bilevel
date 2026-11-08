@@ -1,4 +1,6 @@
 import BilevelOptimization.Basic
 import BilevelOptimization.KKT
+import BilevelOptimization.LipschitzProgram
 import BilevelOptimization.Parametric
 import BilevelOptimization.ValueFunction
+import BilevelOptimization.ValueFunctionOptimality

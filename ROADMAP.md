@@ -72,8 +72,12 @@ slide pages), DD = [Dempe–Dutta 2012].
 | D (5.36) | value function reformulation | ✓ | `bilevelFeasible_eq_valueFeasible`, `bilevelFeasible_lowerFeasible` | identifies (5.5) with `VariationalAnalysis.valueFeasible` |
 | D Def 5.9 | partial calmness | ✓ | `VariationalAnalysis.PartiallyCalm` | [Mordukhovich 2018, Def. 6.14] |
 | D p. 165 | uniform weak sharp minimum ⇒ partial calmness | ✓ | `VariationalAnalysis.partiallyCalm_of_uniform_weakSharp` | [Mordukhovich 2018, Prop. 6.17] |
-| D Thm 5.20, 5.21 | F. John / KKT conditions via the value function | ◐ | `VariationalAnalysis.exists_multipliers_smooth_bilevel_upper` | the limiting-subdifferential version [Mordukhovich 2018, Thm. 6.21]; Dempe's Clarke version is not formalized |
-| D Thm 5.18, 5.19 | nonsmooth MFCQ fails for (5.36) | ☐ | | |
+| D p. 163 | (NMFCQ), (NLICQ), abnormal multipliers (5.39) | ✓ | `NonsmoothMFCQ`, `NonsmoothLICQ`, `abnormalMultipliers`, `NonsmoothLICQ.nonsmoothMFCQ` | via Clarke's generalized gradient |
+| D Thm 5.18 | (NMFCQ) ⟺ `Λ⁰(z) = {0}` | ✓ | `nonsmoothMFCQ_iff_abnormalMultipliers_eq` | Motzkin's alternative `exists_multipliers_of_not_exists_direction`; needs nonempty generalized gradients (Lipschitz data), not feasibility |
+| [Clarke 1983, Thm 6.1.1] | multiplier rule for Lipschitz programs (used in D Thm 5.20, 5.21) | ✓ | `exists_fritzJohn_clarke`, `exists_kkt_clarke_of_abnormalMultipliers_eq`, `exists_kkt_clarke_of_nonsmoothMFCQ` | from [Mordukhovich 2018, Thm. 6.5(ii)] with `∂f ⊆ ∂̄f` |
+| D Thm 5.19 | (5.36) has a nontrivial abnormal multiplier; no (NMFCQ)/(NLICQ) | ✓ | `exists_abnormalMultiplier_valueConstraints`, `not_nonsmoothMFCQ_valueConstraints`, `valueConstraints` | "equality in (4.27)" as `co ⋃ ∇ₓL ⊆ ∂̄μ'(x̄)`; (C) not needed given it |
+| D Thm 5.20 | F. John conditions via the value function | ✓ | `exists_fritzJohn_valueFunction` | nontriviality of the multipliers added (missing in the statement) |
+| D Thm 5.21 | KKT conditions via the value function | ✓ | `exists_kkt_valueFunction` | equality in (4.27) not needed; limiting version with inner semicontinuity at one `ȳ`: `VariationalAnalysis.exists_multipliers_smooth_bilevel_upper` [Mordukhovich 2018, Thm. 6.21] |
 
 ## Not started
 
