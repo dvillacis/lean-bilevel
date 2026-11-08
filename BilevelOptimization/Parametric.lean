@@ -9,7 +9,7 @@ import VariationalAnalysis.WellPosedness.Criterion
 /-!
 # Parametric optimization
 
-Sect. 4.1–4.2 of [Dempe 2002] and the existence results Thm. 5.2–5.3 built on them: the
+Sect. 4.1–4.2 of [Dempe 2002] (Thm. 4.1–4.3) and the existence results Thm. 5.2–5.3 built on them: the
 follower's problem `min_y {φ(x, y) | y ∈ K(x)}` as a parametric optimization problem in the
 leader's variable `x`.
 
@@ -28,6 +28,11 @@ leader's variable `x`.
   set `Λ(x, y)` is nonempty and compact; `convex_lowerMultipliers`.
 * `solutionMap_subset_localSolutionMap`, `localSolutionMap_subset_stationaryMap`,
   `stationaryMap_subset_solutionMap`: the inclusions (4.7) and `SP = Ψ` for convex problems.
+* `upperHemicontinuousAt_lowerMultipliers`, `upperHemicontinuousAt_stationaryMap`: Thm. 4.2 of
+  [Dempe 2002]: for `C¹` data, (MFCQ) at `(x̄, ȳ)` makes `Λ` upper semicontinuous at `(x̄, ȳ)`
+  (via local boundedness, `exists_eventually_lowerMultipliers_subset`, and the closed graph,
+  `isClosed_graph_lowerMultipliers`); with local boundedness of the feasible-set map and (MFCQ) at
+  all feasible points `(x̄, y)`, `SP` is upper semicontinuous at `x̄`.
 * `continuousAt_marginal`, `upperHemicontinuousAt_solutionMap`: Thm. 4.3 of [Dempe 2002] (a
   Berge-type maximum theorem): if `gph K` is closed, `K` is uniformly bounded near `x̄` and lower
   semicontinuous at `x̄`, and `φ` is continuous, then the value function is continuous at `x̄` and
@@ -53,6 +58,12 @@ leader's variable `x`.
 * (MFCQ) is used in its dual form (positive linear independence of the active gradients),
   which is equivalent to the primal form by Gordan's theorem (not formalized here).
 * Lower-level equality constraints are omitted, as in `BilevelOptimization.KKT`.
+* Thm. 4.2 assumes (MFCQ) only at the points of `SP(x̄)`. For the upper semicontinuity of `SP`
+  this is not enough (`not_upperHemicontinuousAt_stationaryMap_example`: `min_y {y | y² ≤ x²}`
+  has `SP(0) = ∅` but `SP(x) = {-|x|}` for `x ≠ 0`); the proof needs (MFCQ) at limits of
+  stationary points, which are only known to be feasible. Here (MFCQ) is assumed at all
+  feasible points `(x̄, y)`, as in Thm. 4.3. The data are assumed globally `C¹`, as in Ch. 4 of the
+  book.
 -/
 
 open Filter Topology Set
@@ -97,9 +108,10 @@ theorem LowerHemicontinuousAt.eventually_exists (hK : LowerHemicontinuousAt K x)
   obtain ⟨z', hz'K, hz'W⟩ := hne
   exact ⟨z', hz'K, hP x' hx' z' hz'W⟩
 
-/-- A map with closed graph that is uniformly bounded near `x₀` (its values near `x₀` lie in a
-common compact set) is upper semicontinuous at `x₀`. -/
-theorem upperHemicontinuousAt_of_isClosed_graph (hK : IsClosed (graph K))
+/-- A map that is uniformly bounded near `x₀` (its values near `x₀` lie in a common compact set)
+and whose graph has no closure points over `x₀` outside it is upper semicontinuous at `x₀`. -/
+theorem upperHemicontinuousAt_of_mem_closure_graph
+    (hcl : ∀ y, (x₀, y) ∈ closure (graph K) → y ∈ K x₀)
     (hb : ∃ U ∈ 𝓝 x₀, ∃ C, IsCompact C ∧ ∀ x ∈ U, K x ⊆ C) : UpperHemicontinuousAt K x₀ := by
   intro V hV hKV
   obtain ⟨U, hU, C, hC, hKC⟩ := hb
@@ -107,11 +119,18 @@ theorem upperHemicontinuousAt_of_isClosed_graph (hK : IsClosed (graph K))
     intro y _
     by_cases hy : y ∈ V
     · exact ((continuous_snd.tendsto (x₀, y)).eventually (hV.mem_nhds hy)).mono fun _ hp _ ↦ hp
-    · exact Filter.Eventually.mono (hK.isOpen_compl.mem_nhds
-        (show (x₀, y) ∈ (graph K)ᶜ from fun h ↦ hy (hKV h))) fun p hp hpK ↦ absurd hpK hp
+    · exact Filter.Eventually.mono (isClosed_closure.isOpen_compl.mem_nhds
+        (show (x₀, y) ∈ (closure (graph K))ᶜ from fun h ↦ hy (hKV (hcl y h))))
+        fun p hp hpK ↦ absurd (subset_closure (s := graph K) hpK) hp
   filter_upwards [hU, hC.eventually_forall_of_forall_eventually
     (P := fun x y ↦ y ∈ K x → y ∈ V) hP] with x hxU hx y hy
   exact hx y (hKC x hxU hy) hy
+
+/-- A map with closed graph that is uniformly bounded near `x₀` (its values near `x₀` lie in a
+common compact set) is upper semicontinuous at `x₀`. -/
+theorem upperHemicontinuousAt_of_isClosed_graph (hK : IsClosed (graph K))
+    (hb : ∃ U ∈ 𝓝 x₀, ∃ C, IsCompact C ∧ ∀ x ∈ U, K x ⊆ C) : UpperHemicontinuousAt K x₀ :=
+  upperHemicontinuousAt_of_mem_closure_graph (fun _ h ↦ by rwa [hK.closure_eq] at h) hb
 
 end Hemicontinuity
 
@@ -619,5 +638,204 @@ theorem exists_isOptimisticSolution_of_regular (hgc : ∀ i, Continuous (g i))
     (fun x hx ↦ lowerHemicontinuousAt_lowerFeasible (hg x hx) (hreg x hx)) hφ hf hne
 
 end Regular
+
+/-! ### Thm. 4.2: upper semicontinuity of `Λ` and `SP` -/
+
+section Stability
+
+variable [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {ι : Type*} [Fintype ι] {φ : E × F → ℝ} {g : ι → E × F → ℝ} {x₀ : E} {y₀ : F}
+
+omit [Fintype ι] in
+/-- The partial derivative `(x, y) ↦ ∇_y u(x, y)` of a `C¹` function is continuous. -/
+theorem continuous_fderiv_section {u : E × F → ℝ} (hu : ContDiff ℝ 1 u) :
+    Continuous fun p : E × F ↦ fderiv ℝ (fun z ↦ u (p.1, z)) p.2 := by
+  have : (fun p : E × F ↦ fderiv ℝ (fun z ↦ u (p.1, z)) p.2) =
+      fun p ↦ (fderiv ℝ u p).comp (ContinuousLinearMap.inr ℝ E F) :=
+    funext fun p ↦ fderiv_section ((hu.differentiable one_ne_zero) p)
+  rw [this]
+  exact (hu.continuous_fderiv one_ne_zero).clm_comp continuous_const
+
+/-- For `C¹` data, the multiplier map `(x, y) ↦ Λ(x, y)` has a closed graph. -/
+theorem isClosed_graph_lowerMultipliers (hφ : ContDiff ℝ 1 φ) (hg : ∀ i, ContDiff ℝ 1 (g i)) :
+    IsClosed (graph fun p : E × F ↦ lowerMultipliers φ g p.1 p.2) := by
+  have hD : ∀ i, Continuous fun q : (E × F) × (ι → ℝ) ↦
+      fderiv ℝ (fun z ↦ g i (q.1.1, z)) q.1.2 :=
+    fun i ↦ (continuous_fderiv_section (hg i)).comp continuous_fst
+  have e : graph (fun p : E × F ↦ lowerMultipliers φ g p.1 p.2) =
+      (⋂ i, {q : (E × F) × (ι → ℝ) | g i q.1 ≤ 0}) ∩ ((⋂ i, {q | 0 ≤ q.2 i}) ∩
+        ((⋂ i, {q | q.2 i * g i q.1 = 0}) ∩
+          {q | fderiv ℝ (fun z ↦ φ (q.1.1, z)) q.1.2 +
+            ∑ i, q.2 i • fderiv ℝ (fun z ↦ g i (q.1.1, z)) q.1.2 = 0})) := by
+    ext q
+    simp [VariationalAnalysis.graph, lowerMultipliers, IsLowerKKT]
+  rw [e]
+  refine (isClosed_iInter fun i ↦ isClosed_le ((hg i).continuous.comp continuous_fst)
+    continuous_const).inter ((isClosed_iInter fun i ↦ isClosed_le continuous_const
+      ((continuous_apply i).comp continuous_snd)).inter ((isClosed_iInter fun i ↦ isClosed_eq
+        (((continuous_apply i).comp continuous_snd).mul ((hg i).continuous.comp continuous_fst))
+        continuous_const).inter (isClosed_eq (((continuous_fderiv_section hφ).comp
+          continuous_fst).add (continuous_finsetSum _ fun i _ ↦
+            ((continuous_apply i).comp continuous_snd).smul (hD i))) continuous_const)))
+
+/-- First part of the proof of Thm. 4.2 of [Dempe 2002]: under (MFCQ) at `(x̄, ȳ)` (in its dual
+form), the multiplier map `Λ` is locally bounded at `(x̄, ȳ)`. -/
+theorem exists_eventually_lowerMultipliers_subset (hφ : ContDiff ℝ 1 φ)
+    (hg : ∀ i, ContDiff ℝ 1 (g i)) (hreg : LowerPLI g x₀ y₀) :
+    ∃ R, ∀ᶠ p : E × F in 𝓝 (x₀, y₀), lowerMultipliers φ g p.1 p.2 ⊆ Metric.closedBall 0 R := by
+  obtain ⟨c, hc, hbound⟩ := exists_pos_mul_norm_le_of_lowerPLI hreg
+  set D : ι → E × F → StrongDual ℝ F := fun i p ↦ fderiv ℝ (fun z ↦ g i (p.1, z)) p.2 with hD
+  set Dφ : E × F → StrongDual ℝ F := fun p ↦ fderiv ℝ (fun z ↦ φ (p.1, z)) p.2 with hDφ
+  have hDc : ∀ i, Continuous (D i) := fun i ↦ continuous_fderiv_section (hg i)
+  have hDφc : Continuous Dφ := continuous_fderiv_section hφ
+  have h1 : ∀ᶠ p in 𝓝 (x₀, y₀), ∀ i, g i (x₀, y₀) < 0 → g i p < 0 :=
+    eventually_all.2 fun i ↦ by
+      by_cases h : g i (x₀, y₀) < 0
+      · exact ((hg i).continuous.continuousAt.eventually_lt continuousAt_const h).mono
+          fun _ hp _ ↦ hp
+      · exact Eventually.of_forall fun _ h' ↦ absurd h' h
+  have h2 : ∀ᶠ p in 𝓝 (x₀, y₀), ∑ i, ‖D i p - D i (x₀, y₀)‖ < c / 2 :=
+    (continuous_finsetSum _ fun i _ ↦ ((hDc i).sub continuous_const).norm).continuousAt.eventually_lt
+      continuousAt_const (show ∑ i, ‖D i (x₀, y₀) - D i (x₀, y₀)‖ < c / 2 by simpa using half_pos hc)
+  have h3 : ∀ᶠ p in 𝓝 (x₀, y₀), ‖Dφ p‖ < ‖Dφ (x₀, y₀)‖ + 1 :=
+    hDφc.norm.continuousAt.eventually_lt continuousAt_const (lt_add_one _)
+  refine ⟨2 * (‖Dφ (x₀, y₀)‖ + 1) / c, ?_⟩
+  filter_upwards [h1, h2, h3] with p hp1 hp2 hp3 lam hlam
+  obtain ⟨-, hl0, hcs, hKKT⟩ := hlam
+  have hsupp : ∀ i, g i (x₀, y₀) < 0 → lam i = 0 := fun i hi ↦
+    (mul_eq_zero.1 (hcs i)).resolve_right (hp1 i hi).ne
+  have hb : c * ‖lam‖ ≤ ‖∑ i, lam i • D i (x₀, y₀)‖ := hbound lam hl0 hsupp
+  have hsum : ∑ i, lam i • D i p = -Dφ p := eq_neg_of_add_eq_zero_right hKKT
+  have hkey : ∑ i, lam i • D i (x₀, y₀) = -Dφ p - ∑ i, lam i • (D i p - D i (x₀, y₀)) := by
+    simp only [smul_sub, Finset.sum_sub_distrib, hsum]
+    abel
+  have hnorm : ‖∑ i, lam i • (D i p - D i (x₀, y₀))‖ ≤ ‖lam‖ * (c / 2) :=
+    calc ‖∑ i, lam i • (D i p - D i (x₀, y₀))‖
+        ≤ ∑ i, ‖lam i • (D i p - D i (x₀, y₀))‖ := norm_sum_le _ _
+      _ ≤ ∑ i, ‖lam‖ * ‖D i p - D i (x₀, y₀)‖ := Finset.sum_le_sum fun i _ ↦ by
+          rw [norm_smul]
+          exact mul_le_mul_of_nonneg_right (norm_le_pi_norm lam i) (norm_nonneg _)
+      _ = ‖lam‖ * ∑ i, ‖D i p - D i (x₀, y₀)‖ := (Finset.mul_sum _ _ _).symm
+      _ ≤ ‖lam‖ * (c / 2) := mul_le_mul_of_nonneg_left hp2.le (norm_nonneg _)
+  have hle : c * ‖lam‖ ≤ ‖Dφ p‖ + ‖lam‖ * (c / 2) :=
+    calc c * ‖lam‖ ≤ ‖∑ i, lam i • D i (x₀, y₀)‖ := hb
+      _ = ‖-Dφ p - ∑ i, lam i • (D i p - D i (x₀, y₀))‖ := by rw [hkey]
+      _ ≤ ‖-Dφ p‖ + ‖∑ i, lam i • (D i p - D i (x₀, y₀))‖ := norm_sub_le _ _
+      _ ≤ ‖Dφ p‖ + ‖lam‖ * (c / 2) := by rw [norm_neg]; gcongr
+  rw [Metric.mem_closedBall, dist_zero_right, le_div_iff₀ hc]
+  linarith
+
+/-- Thm. 4.2 of [Dempe 2002], first part: for `C¹` data with (MFCQ) at `(x̄, ȳ)`, the multiplier
+map `Λ` is upper semicontinuous at `(x̄, ȳ)`. -/
+theorem upperHemicontinuousAt_lowerMultipliers (hφ : ContDiff ℝ 1 φ)
+    (hg : ∀ i, ContDiff ℝ 1 (g i)) (hreg : LowerPLI g x₀ y₀) :
+    UpperHemicontinuousAt (fun p : E × F ↦ lowerMultipliers φ g p.1 p.2) (x₀, y₀) :=
+  let ⟨R, hR⟩ := exists_eventually_lowerMultipliers_subset hφ hg hreg
+  upperHemicontinuousAt_of_isClosed_graph (isClosed_graph_lowerMultipliers hφ hg)
+    ⟨_, hR, _, isCompact_closedBall 0 R, fun _ hp ↦ hp⟩
+
+/-- Thm. 4.2 of [Dempe 2002], second part: for `C¹` data, if the follower's feasible-set map is
+locally bounded at `x̄` and (MFCQ) holds at every feasible point `(x̄, y)`, then the stationary
+solution map `SP` is upper semicontinuous at `x̄`. (MFCQ) at the points of `SP(x̄)` alone, as in
+the book, is not enough: `not_upperHemicontinuousAt_stationaryMap_example`. -/
+theorem upperHemicontinuousAt_stationaryMap [FiniteDimensional ℝ F] (hφ : ContDiff ℝ 1 φ)
+    (hg : ∀ i, ContDiff ℝ 1 (g i)) (hb : VariationalAnalysis.LocallyBoundedAt (lowerFeasible g) x₀)
+    (hreg : ∀ y ∈ lowerFeasible g x₀, LowerPLI g x₀ y) :
+    UpperHemicontinuousAt (stationaryMap φ g) x₀ := by
+  have hSG : ∀ x, stationaryMap φ g x ⊆ lowerFeasible g x := fun _ _ ⟨_, hl⟩ ↦ hl.1
+  refine upperHemicontinuousAt_of_mem_closure_graph (fun y hy ↦ ?_) ?_
+  · -- closure points over `x̄` are stationary
+    have hyG : y ∈ lowerFeasible g x₀ := by
+      have h := closure_mono (show graph (stationaryMap φ g) ⊆ graph (lowerFeasible g) from
+        fun p hp ↦ hSG p.1 hp) hy
+      rwa [(isClosed_graph_lowerFeasible fun i ↦ (hg i).continuous).closure_eq] at h
+    by_contra hne
+    have hempty : lowerMultipliers φ g x₀ y = ∅ := not_nonempty_iff_eq_empty.1 hne
+    have hev := upperHemicontinuousAt_lowerMultipliers hφ hg (hreg y hyG) ∅ isOpen_empty
+      (show lowerMultipliers φ g x₀ y ⊆ ∅ by rw [hempty])
+    obtain ⟨p, hp, hpG⟩ := mem_closure_iff_nhds.1 hy _ hev
+    obtain ⟨lam, hlam⟩ := hpG
+    exact hp hlam
+  · -- (C): uniform boundedness
+    obtain ⟨U, hU, hB⟩ := hb
+    exact ⟨U, hU, _, hB.isCompact_closure, fun x hx y hy ↦
+      subset_closure (mem_biUnion hx (hSG x hy))⟩
+
+end Stability
+
+/-! ### Example: (MFCQ) on `SP(x̄)` alone does not give Thm. 4.2 -/
+
+section Example
+
+/-- The constraint `y² - x² ≤ 0`. -/
+private def exg₂ : Unit → ℝ × ℝ → ℝ := fun _ p ↦ p.2 ^ 2 - p.1 ^ 2
+
+private def exφ₂ : ℝ × ℝ → ℝ := fun p ↦ p.2
+
+private theorem exφ₂_deriv (x y : ℝ) : fderiv ℝ (fun z ↦ exφ₂ (x, z)) y 1 = 1 :=
+  fderiv_apply_one_of_hasDerivAt (hasDerivAt_id' y)
+
+private theorem exg₂_deriv (x y : ℝ) : fderiv ℝ (fun z ↦ exg₂ () (x, z)) y 1 = 2 * y :=
+  fderiv_apply_one_of_hasDerivAt (((hasDerivAt_pow 2 y).sub_const (x ^ 2)).congr_deriv
+    (by ring))
+
+private theorem exKKT_iff (x y : ℝ) (lam : Unit → ℝ) :
+    fderiv ℝ (fun z ↦ exφ₂ (x, z)) y + ∑ i, lam i • fderiv ℝ (fun z ↦ exg₂ i (x, z)) y = 0 ↔
+      1 + lam () * (2 * y) = 0 := by
+  rw [← exφ₂_deriv x y, ← exg₂_deriv x y]
+  constructor
+  · intro h
+    simpa using congrArg (fun T : StrongDual ℝ ℝ ↦ T 1) h
+  · intro h
+    refine ContinuousLinearMap.ext_ring ?_
+    simpa using h
+
+/-- Thm. 4.2 of [Dempe 2002] needs (MFCQ) beyond `SP(x̄)`: for `min_y {y | y² ≤ x²}` the
+feasible-set map is locally bounded at `0` and `SP(0) = ∅` (so (MFCQ) holds at all points of
+`SP(0)`), but `SP(x) = {-|x|}` for `x ≠ 0`, so `SP` is not upper semicontinuous at `0`. (MFCQ)
+fails at the feasible point `(0, 0)`. -/
+theorem not_upperHemicontinuousAt_stationaryMap_example :
+    VariationalAnalysis.LocallyBoundedAt (lowerFeasible exg₂) 0 ∧
+      stationaryMap exφ₂ exg₂ 0 = ∅ ∧ ¬ LowerPLI exg₂ 0 0 ∧
+      ¬ UpperHemicontinuousAt (stationaryMap exφ₂ exg₂) 0 := by
+  have hSP0 : stationaryMap exφ₂ exg₂ 0 = ∅ := by
+    refine eq_empty_iff_forall_notMem.2 fun y hy0 ↦ ?_
+    obtain ⟨lam, hfeas, -, -, heq⟩ := hy0
+    have hy : y = 0 := by
+      have := hfeas ()
+      simp only [exg₂] at this
+      nlinarith [sq_nonneg y]
+    rw [exKKT_iff, hy] at heq
+    norm_num at heq
+  have hSP : ∀ x : ℝ, x ≠ 0 → -|x| ∈ stationaryMap exφ₂ exg₂ x := fun x hx ↦ by
+    have hax : |x| ≠ 0 := abs_ne_zero.2 hx
+    refine ⟨fun _ ↦ 1 / (2 * |x|), fun _ ↦ ?_, fun _ ↦ by positivity, fun _ ↦ ?_, ?_⟩
+    · simp [exg₂, sq_abs]
+    · simp [exg₂, sq_abs]
+    · rw [exKKT_iff]
+      field_simp
+      ring
+  refine ⟨⟨Ioo (-1) 1, Ioo_mem_nhds (by norm_num) (by norm_num),
+    (Metric.isBounded_Icc (-1 : ℝ) 1).subset ?_⟩, hSP0, ?_, ?_⟩
+  · simp only [iUnion_subset_iff]
+    intro x hx y hy
+    have h := hy ()
+    simp only [exg₂] at h
+    obtain ⟨hx1, hx2⟩ := hx
+    constructor <;> nlinarith [sq_nonneg (y + 1), sq_nonneg (y - 1)]
+  · intro hreg
+    have h := hreg (fun _ ↦ 1) (fun _ ↦ zero_le_one) (fun _ h ↦ by simp [exg₂] at h) (by
+      refine ContinuousLinearMap.ext_ring ?_
+      simpa using exg₂_deriv 0 0)
+    simpa using congrFun h ()
+  · intro husc
+    obtain ⟨ε, hε, hball⟩ := Metric.eventually_nhds_iff.1
+      (husc ∅ isOpen_empty (by rw [hSP0]))
+    have hx : ε / 2 ≠ 0 := by positivity
+    have := hball (show dist (ε / 2) 0 < ε by
+      rw [Real.dist_eq, sub_zero, abs_of_pos (half_pos hε)]; linarith) (hSP (ε / 2) hx)
+    exact this
+
+end Example
 
 end Bilevel
