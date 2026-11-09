@@ -25,7 +25,7 @@ follower's feasible-set map `K` (or constraints `gᵢ(x, y) ≤ 0`) and the lead
 | Lipschitz programs | `BilevelOptimization/LipschitzProgram` | nonsmooth (MFCQ)/(LICQ) and abnormal multipliers (D Thm. 5.18), the Clarke multiplier rule in Fritz John and KKT form |
 | Value function approach | `BilevelOptimization/ValueFunctionOptimality` | failure of nonsmooth constraint qualifications for (5.36) (D Thm. 5.19), Fritz John and KKT conditions via the Clarke gradient of the value function (D Thm. 5.20, 5.21) |
 | KKT reformulation | `BilevelOptimization/KKT` | KKT conditions of a convex follower (sufficiency, necessity under Slater or positive linear independence), global equivalence with (5.26) [Dempe–Dutta 2012], local solutions (D Thm. 5.15), counterexamples without convexity or Slater |
-| Local KKT solutions | `BilevelOptimization/KKTLocal` | local solutions of (5.26) for every multiplier are local bilevel solutions, and the local equivalence under convexity and Slater [Dempe–Dutta 2012, Thm. 3.1]; a counterexample with a single multiplier |
+| Local KKT solutions | `BilevelOptimization/KKTLocal` | local solutions of (5.26) for every multiplier are local bilevel solutions, and the local equivalence under convexity and Slater [Dempe–Dutta 2012, Thm. 3.1]; under (CRCQ) the vertices of the multiplier set suffice (Cor. 3.3); a counterexample with a single multiplier |
 
 D = [Dempe 2002]. `ROADMAP.md` lists the statements of the sources with their Lean names or status.
 

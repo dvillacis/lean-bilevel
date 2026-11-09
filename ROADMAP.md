@@ -63,7 +63,9 @@ slide pages), DD = [Dempe–Dutta 2012].
 | DD, S pp. 153–170 | Slater fails at the solution: bilevel global, KKT has no solution | ☐ | | |
 | DD Thm 3.1 | KKT local for every multiplier ⇒ bilevel local; equivalence under convexity and Slater | ✓ | `isLocalMinOn_bilevelFeasible_of_forall_isLocalMinOn_kktFeasible`, `isLocalMinOn_bilevelFeasible_iff_forall_isLocalMinOn_kktFeasible` | converse needs only `C¹` and (MFCQ) at `(x̄, ȳ)`, no convexity; Slater only at `x̄`; via tube lemma and Thm 4.2 |
 | DD, S p. 188 | local solutions of (5.26) need not be local bilevel solutions | ✓ | `isLocalMinOn_kktFeasible_not_isLocalMinOn_bilevelFeasible_example` | linear example from [Dempe et al. 2015] (in *Solving Methods*, p. 27), not Schmidt's Ex. 4.6 |
-| DD Cor 3.3 | under (CRCQ), vertices of `Λ(x̄, ȳ)` suffice | ☐ | | |
+| D p. 77 | (CRCQ) | ✓ | `LowerCRCQ` | for the follower's inequality constraints |
+| — | vertices of `Λ(x, y)`: independent support gradients, finitely many | ✓ | `mem_extremePoints_lowerMultipliers_iff`, `finite_extremePoints_lowerMultipliers` | vertices = `Set.extremePoints` |
+| DD Cor 3.3 | under (CRCQ), vertices of `Λ(x̄, ȳ)` suffice | ✓ | `isLocalMinOn_bilevelFeasible_of_forall_mem_extremePoints_isLocalMinOn_kktFeasible`, `isLocalMinOn_bilevelFeasible_of_forall_mem_extremePoints_of_slaterAt`, `upperHemicontinuousAt_extremePoints_lowerMultipliers` | no convexity in the general form; convexity only at `x̄` with Slater |
 | D Thm 5.11 | (MFCQ) fails at every feasible point of (5.26) | ☐ | | |
 | D Thm 5.16, 5.17 | F. John / KKT conditions for (5.27) | ☐ | | |
 | D Thm 5.12 | genericity of (PLICQ) | ☐ | | needs Whitney topology and Sard |
