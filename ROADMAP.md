@@ -43,7 +43,9 @@ slide pages), DD = [Dempe–Dutta 2012].
 | D Thm 4.14 | value function locally Lipschitz under (C), (MFCQ) | ✓ | `exists_lipschitzOnWith_lowerValue_of_locallyBoundedAt` | (C) replaced by continuity of `g` and local boundedness of `G`; via [Mordukhovich 2018, Thm. 4.3] and `lipschitzLikeAt_lowerFeasible` |
 | D Thm 4.15–4.16 | Dini directional derivatives and directional differentiability of the value function | ☐ | | |
 | D Thm 4.17 | `∂̄φ(y⁰) ⊆ co ⋃ ∇L` (4.27) | ✓ | `clarkeSubdiff_lowerValue_subset`, `exists_clarkeSubdiff_lowerValue_subset`, `lagrangianGradients`; limiting version `subdiff_lowerValue_subset_iUnion` | via `∂̄μ = co ∂μ` (`VariationalAnalysis.clarkeSubdiff_eq_convexHull`) and [Mordukhovich 2018, Thm. 4.1(ii)] |
-| D Cor 4.5–4.7 | equality in (4.27) under (LICQ) or convexity | ☐ | | |
+| D Cor 4.5 | equality in (4.27) under (LICQ) | ✓ | `clarkeSubdiff_lowerValue_eq_of_lowerLICQ`, `eventually_lowerValue_le_of_lowerLICQ`, `LowerLICQ`, `lowerPLI_of_lowerLICQ` | direct proof by feasible curves, not via Cor 4.4; Clarke regularity of `φ` not formalized |
+| D Cor 4.6 | `∂̄φ(y⁰) = ∇L(x⁰, y⁰, Λ(x⁰, y⁰))` for convex problems with `Ψ(y⁰) = {x⁰}` | ✓ | `clarkeSubdiff_lowerValue_eq_of_isConvexLower`, `eventually_le_lowerValue_of_isConvexLower`, `upperHemicontinuousAt_lowerSolution` | direct proof by strict differentiability, not via Thm 4.16 |
+| D Cor 4.7 | the same for jointly convex problems, `Ψ(y⁰)` arbitrary | ✓ | `clarkeSubdiff_lowerValue_eq_of_convexOn`, `le_lowerValue_of_convexOn`, `lagrangianGradients_subset_of_convexOn` | via KKT for the joint problem instead of Lemma 4.4 and the saddle-point argument; (MFCQ) at all `y ∈ Ψ(y⁰)` |
 
 ## D Ch. 5.4–5.5 / S "Single-level reformulations": the KKT reformulation
 

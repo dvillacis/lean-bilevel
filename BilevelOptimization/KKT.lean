@@ -113,6 +113,11 @@ def LowerPLI (x : E) (y : F) : Prop :=
   ∀ lam : ι → ℝ, (∀ i, 0 ≤ lam i) → (∀ i, g i (x, y) < 0 → lam i = 0) →
     ∑ i, lam i • fderiv ℝ (fun z ↦ g i (x, z)) y = 0 → lam = 0
 
+/-- Linear independence of the active gradients `∇_y gᵢ(x, y)`, `gᵢ(x, y) = 0`: (LICQ) for the
+follower's problem. -/
+def LowerLICQ (x : E) (y : F) : Prop :=
+  LinearIndependent ℝ fun i : {i // g i (x, y) = 0} ↦ fderiv ℝ (fun z ↦ g i.1 (x, z)) y
+
 end Definitions'
 
 theorem min_eq_zero_iff {a b : ℝ} : min a b = 0 ↔ 0 ≤ a ∧ 0 ≤ b ∧ a * b = 0 := by
@@ -198,6 +203,23 @@ theorem lowerPLI_of_slaterAt (hconv : ∀ i, ConvexOn ℝ univ (fun z ↦ g i (x
   have hterm := (Finset.sum_eq_zero_iff_of_nonpos hle).1 (le_antisymm (Finset.sum_nonpos hle) h4)
   funext i
   exact (mul_eq_zero.1 (hterm i (Finset.mem_univ i))).resolve_right (hw i).ne
+
+/-- (LICQ) implies positive linear independence of the active gradients (dual (MFCQ)) at feasible
+points. -/
+theorem lowerPLI_of_lowerLICQ (hfeas : ∀ i, g i (x, y) ≤ 0) (h : LowerLICQ g x y) :
+    LowerPLI g x y := by
+  classical
+  intro lam _ hin hsum
+  have hsplit := Fintype.sum_subtype_add_sum_subtype (fun i ↦ g i (x, y) = 0)
+    fun i ↦ lam i • fderiv ℝ (fun z ↦ g i (x, z)) y
+  have hrest : ∑ i : {i // ¬ g i (x, y) = 0}, lam i.1 • fderiv ℝ (fun z ↦ g i.1 (x, z)) y = 0 :=
+    Finset.sum_eq_zero fun i _ ↦ by rw [hin i.1 (lt_of_le_of_ne (hfeas i.1) i.2), zero_smul]
+  rw [hrest, add_zero, hsum] at hsplit
+  have hA := Fintype.linearIndependent_iff.1 h (fun i ↦ lam i.1) hsplit
+  funext i
+  by_cases hi : g i (x, y) = 0
+  · exact hA ⟨i, hi⟩
+  · exact hin i (lt_of_le_of_ne (hfeas i) hi)
 
 /-- The KKT conditions are necessary for local optimality in the follower's problem under
 positive linear independence of the active gradients (no convexity), via the normal cone to `C¹`
