@@ -69,7 +69,14 @@ slide pages), DD = [Dempe–Dutta 2012].
 | D Thm 5.11 | (MFCQ) fails at every feasible point of (5.26) | ☐ | | |
 | D Thm 5.16, 5.17 | F. John / KKT conditions for (5.27) | ☐ | | |
 | D Thm 5.12 | genericity of (PLICQ) | ☐ | | needs Whitney topology and Sard |
-| S pp. 118–144 | LP–LP: KKT, strong duality, big-M reformulations | ☐ | | |
+| — | Farkas' lemma, closedness of finitely generated cones, conic Carathéodory | ✓ | `exists_nonneg_eq_sum_of_forall_nonneg`, `isClosed_nonnegSpan`, `exists_nonneg_linearIndependent_sum_eq` | in `Farkas.lean`; candidate for lean-variational |
+| S p. 118 | LP–LP bilevel problem | ✓ | `LinearBilevel` | rows as continuous linear functionals; leader constraints may couple `x` and `y` |
+| S pp. 122, 139–142 | follower's LP: KKT conditions, dual, weak and strong duality | ✓ | `mem_lowerSolution_iff`, `sum_mul_le_of_isDualFeasible`, `mem_lowerSolution_iff_exists_isLowerKKT`, `isLowerKKT_iff` | no constraint qualification (Farkas) |
+| S pp. 123–124 | KKT reformulation of LP–LP: global equivalence | ✓ | `image_fst_kktFeasible`, `isMinOn_kktFeasible_iff`, `exists_isMinOn_kktFeasible` | |
+| S pp. 143–144 | strong-duality reformulation, equivalence with KKT | ✓ | `complementarity_iff_le`, `complementarity_iff_eq`, `kktFeasible_eq_sdFeasible`, `isMinOn_sdFeasible_iff` | |
+| S p. 133 | big-M MILP reformulation | ✓ | `mem_kktFeasible_of_mem_bigMFeasible`, `exists_mem_bigMFeasible`, `isMinOn_bigMFeasible_of_isMinOn_kktFeasible`, `isMinOn_feasible_of_isMinOn_bigMFeasible` | "`M` sufficiently large" = `M` bounds multipliers and slacks of one global KKT solution |
+| S p. 127 | (MFCQ)/(LICQ) fail at every feasible point of the KKT reformulation | ☐ | | Ye–Zhu 1995; cf. D Thm 5.11 |
+| S p. 134 | hardness of a bilevel-correct big-M | ☐ | | complexity result, out of scope |
 
 ## D Ch. 5.6: the value function approach
 
