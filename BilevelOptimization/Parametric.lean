@@ -33,6 +33,8 @@ leader's variable `x`.
   (via local boundedness, `exists_eventually_lowerMultipliers_subset`, and the closed graph,
   `isClosed_graph_lowerMultipliers`); with local boundedness of the feasible-set map and (MFCQ) at
   all feasible points `(x̄, y)`, `SP` is upper semicontinuous at `x̄`.
+* `eventually_lowerPLI`: for `C¹` constraints, dual (MFCQ) persists near `(x̄, ȳ)` (with a uniform
+  constant, `exists_eventually_mul_norm_le_of_lowerPLI`).
 * `continuousAt_marginal`, `upperHemicontinuousAt_solutionMap`: Thm. 4.3 of [Dempe 2002] (a
   Berge-type maximum theorem): if `gph K` is closed, `K` is uniformly bounded near `x̄` and lower
   semicontinuous at `x̄`, and `φ` is continuous, then the value function is continuous at `x̄` and
@@ -678,16 +680,17 @@ theorem isClosed_graph_lowerMultipliers (hφ : ContDiff ℝ 1 φ) (hg : ∀ i, C
           continuous_fst).add (continuous_finsetSum _ fun i _ ↦
             ((continuous_apply i).comp continuous_snd).smul (hD i))) continuous_const)))
 
-/-- First part of the proof of Thm. 4.2 of [Dempe 2002]: under (MFCQ) at `(x̄, ȳ)` (in its dual
-form), the multiplier map `Λ` is locally bounded at `(x̄, ȳ)`. -/
-theorem exists_eventually_lowerMultipliers_subset (hφ : ContDiff ℝ 1 φ)
-    (hg : ∀ i, ContDiff ℝ 1 (g i)) (hreg : LowerPLI g x₀ y₀) :
-    ∃ R, ∀ᶠ p : E × F in 𝓝 (x₀, y₀), lowerMultipliers φ g p.1 p.2 ⊆ Metric.closedBall 0 R := by
+/-- Positive linear independence of the active gradients (dual (MFCQ)) persists near `(x̄, ȳ)`
+for `C¹` constraints, with a uniform constant: `c ‖μ‖ ≤ ‖∑ μᵢ ∇_y gᵢ(x, y)‖` for all admissible
+multipliers `μ` at `(x, y)`. -/
+theorem exists_eventually_mul_norm_le_of_lowerPLI (hg : ∀ i, ContDiff ℝ 1 (g i))
+    (hreg : LowerPLI g x₀ y₀) :
+    ∃ c > 0, ∀ᶠ p : E × F in 𝓝 (x₀, y₀), ∀ μ : ι → ℝ, (∀ i, 0 ≤ μ i) →
+      (∀ i, g i p < 0 → μ i = 0) →
+        c * ‖μ‖ ≤ ‖∑ i, μ i • fderiv ℝ (fun z ↦ g i (p.1, z)) p.2‖ := by
   obtain ⟨c, hc, hbound⟩ := exists_pos_mul_norm_le_of_lowerPLI hreg
   set D : ι → E × F → StrongDual ℝ F := fun i p ↦ fderiv ℝ (fun z ↦ g i (p.1, z)) p.2 with hD
-  set Dφ : E × F → StrongDual ℝ F := fun p ↦ fderiv ℝ (fun z ↦ φ (p.1, z)) p.2 with hDφ
   have hDc : ∀ i, Continuous (D i) := fun i ↦ continuous_fderiv_section (hg i)
-  have hDφc : Continuous Dφ := continuous_fderiv_section hφ
   have h1 : ∀ᶠ p in 𝓝 (x₀, y₀), ∀ i, g i (x₀, y₀) < 0 → g i p < 0 :=
     eventually_all.2 fun i ↦ by
       by_cases h : g i (x₀, y₀) < 0
@@ -697,31 +700,52 @@ theorem exists_eventually_lowerMultipliers_subset (hφ : ContDiff ℝ 1 φ)
   have h2 : ∀ᶠ p in 𝓝 (x₀, y₀), ∑ i, ‖D i p - D i (x₀, y₀)‖ < c / 2 :=
     (continuous_finsetSum _ fun i _ ↦ ((hDc i).sub continuous_const).norm).continuousAt.eventually_lt
       continuousAt_const (show ∑ i, ‖D i (x₀, y₀) - D i (x₀, y₀)‖ < c / 2 by simpa using half_pos hc)
-  have h3 : ∀ᶠ p in 𝓝 (x₀, y₀), ‖Dφ p‖ < ‖Dφ (x₀, y₀)‖ + 1 :=
-    hDφc.norm.continuousAt.eventually_lt continuousAt_const (lt_add_one _)
-  refine ⟨2 * (‖Dφ (x₀, y₀)‖ + 1) / c, ?_⟩
-  filter_upwards [h1, h2, h3] with p hp1 hp2 hp3 lam hlam
-  obtain ⟨-, hl0, hcs, hKKT⟩ := hlam
-  have hsupp : ∀ i, g i (x₀, y₀) < 0 → lam i = 0 := fun i hi ↦
-    (mul_eq_zero.1 (hcs i)).resolve_right (hp1 i hi).ne
-  have hb : c * ‖lam‖ ≤ ‖∑ i, lam i • D i (x₀, y₀)‖ := hbound lam hl0 hsupp
-  have hsum : ∑ i, lam i • D i p = -Dφ p := eq_neg_of_add_eq_zero_right hKKT
-  have hkey : ∑ i, lam i • D i (x₀, y₀) = -Dφ p - ∑ i, lam i • (D i p - D i (x₀, y₀)) := by
-    simp only [smul_sub, Finset.sum_sub_distrib, hsum]
-    abel
-  have hnorm : ‖∑ i, lam i • (D i p - D i (x₀, y₀))‖ ≤ ‖lam‖ * (c / 2) :=
-    calc ‖∑ i, lam i • (D i p - D i (x₀, y₀))‖
-        ≤ ∑ i, ‖lam i • (D i p - D i (x₀, y₀))‖ := norm_sum_le _ _
-      _ ≤ ∑ i, ‖lam‖ * ‖D i p - D i (x₀, y₀)‖ := Finset.sum_le_sum fun i _ ↦ by
+  refine ⟨c / 2, half_pos hc, ?_⟩
+  filter_upwards [h1, h2] with p hp1 hp2 μ hμ hsupp
+  have hb : c * ‖μ‖ ≤ ‖∑ i, μ i • D i (x₀, y₀)‖ := hbound μ hμ fun i hi ↦ hsupp i (hp1 i hi)
+  have hkey : ∑ i, μ i • D i (x₀, y₀) =
+      ∑ i, μ i • D i p - ∑ i, μ i • (D i p - D i (x₀, y₀)) := by
+    simp only [smul_sub, Finset.sum_sub_distrib, sub_sub_cancel]
+  have hnorm : ‖∑ i, μ i • (D i p - D i (x₀, y₀))‖ ≤ ‖μ‖ * (c / 2) :=
+    calc ‖∑ i, μ i • (D i p - D i (x₀, y₀))‖
+        ≤ ∑ i, ‖μ i • (D i p - D i (x₀, y₀))‖ := norm_sum_le _ _
+      _ ≤ ∑ i, ‖μ‖ * ‖D i p - D i (x₀, y₀)‖ := Finset.sum_le_sum fun i _ ↦ by
           rw [norm_smul]
-          exact mul_le_mul_of_nonneg_right (norm_le_pi_norm lam i) (norm_nonneg _)
-      _ = ‖lam‖ * ∑ i, ‖D i p - D i (x₀, y₀)‖ := (Finset.mul_sum _ _ _).symm
-      _ ≤ ‖lam‖ * (c / 2) := mul_le_mul_of_nonneg_left hp2.le (norm_nonneg _)
-  have hle : c * ‖lam‖ ≤ ‖Dφ p‖ + ‖lam‖ * (c / 2) :=
-    calc c * ‖lam‖ ≤ ‖∑ i, lam i • D i (x₀, y₀)‖ := hb
-      _ = ‖-Dφ p - ∑ i, lam i • (D i p - D i (x₀, y₀))‖ := by rw [hkey]
-      _ ≤ ‖-Dφ p‖ + ‖∑ i, lam i • (D i p - D i (x₀, y₀))‖ := norm_sub_le _ _
-      _ ≤ ‖Dφ p‖ + ‖lam‖ * (c / 2) := by rw [norm_neg]; gcongr
+          exact mul_le_mul_of_nonneg_right (norm_le_pi_norm μ i) (norm_nonneg _)
+      _ = ‖μ‖ * ∑ i, ‖D i p - D i (x₀, y₀)‖ := (Finset.mul_sum _ _ _).symm
+      _ ≤ ‖μ‖ * (c / 2) := mul_le_mul_of_nonneg_left hp2.le (norm_nonneg _)
+  have hle : c * ‖μ‖ ≤ ‖∑ i, μ i • D i p‖ + ‖μ‖ * (c / 2) :=
+    calc c * ‖μ‖ ≤ ‖∑ i, μ i • D i (x₀, y₀)‖ := hb
+      _ = ‖∑ i, μ i • D i p - ∑ i, μ i • (D i p - D i (x₀, y₀))‖ := by rw [hkey]
+      _ ≤ ‖∑ i, μ i • D i p‖ + ‖∑ i, μ i • (D i p - D i (x₀, y₀))‖ := norm_sub_le _ _
+      _ ≤ ‖∑ i, μ i • D i p‖ + ‖μ‖ * (c / 2) := by gcongr
+  show c / 2 * ‖μ‖ ≤ ‖∑ i, μ i • D i p‖
+  linarith
+
+/-- Dual (MFCQ) for `C¹` constraints is stable: it persists near `(x̄, ȳ)`. -/
+theorem eventually_lowerPLI (hg : ∀ i, ContDiff ℝ 1 (g i)) (hreg : LowerPLI g x₀ y₀) :
+    ∀ᶠ p : E × F in 𝓝 (x₀, y₀), LowerPLI g p.1 p.2 := by
+  obtain ⟨c, hc, h⟩ := exists_eventually_mul_norm_le_of_lowerPLI hg hreg
+  filter_upwards [h] with p hp μ hμ hsupp hsum
+  have hle := hp μ hμ hsupp
+  rw [hsum, norm_zero] at hle
+  exact norm_eq_zero.1 (le_antisymm (by nlinarith [norm_nonneg μ]) (norm_nonneg _))
+
+/-- First part of the proof of Thm. 4.2 of [Dempe 2002]: under (MFCQ) at `(x̄, ȳ)` (in its dual
+form), the multiplier map `Λ` is locally bounded at `(x̄, ȳ)`. -/
+theorem exists_eventually_lowerMultipliers_subset (hφ : ContDiff ℝ 1 φ)
+    (hg : ∀ i, ContDiff ℝ 1 (g i)) (hreg : LowerPLI g x₀ y₀) :
+    ∃ R, ∀ᶠ p : E × F in 𝓝 (x₀, y₀), lowerMultipliers φ g p.1 p.2 ⊆ Metric.closedBall 0 R := by
+  obtain ⟨c, hc, hb⟩ := exists_eventually_mul_norm_le_of_lowerPLI hg hreg
+  have h3 : ∀ᶠ p : E × F in 𝓝 (x₀, y₀), ‖fderiv ℝ (fun z ↦ φ (p.1, z)) p.2‖ <
+      ‖fderiv ℝ (fun z ↦ φ (x₀, z)) y₀‖ + 1 :=
+    (continuous_fderiv_section hφ).norm.continuousAt.eventually_lt continuousAt_const
+      (lt_add_one _)
+  refine ⟨(‖fderiv ℝ (fun z ↦ φ (x₀, z)) y₀‖ + 1) / c, ?_⟩
+  filter_upwards [hb, h3] with p hp hp3 lam hlam
+  obtain ⟨-, hl0, hcs, hKKT⟩ := hlam
+  have h := hp lam hl0 fun i hi ↦ (mul_eq_zero.1 (hcs i)).resolve_right hi.ne
+  rw [eq_neg_of_add_eq_zero_right hKKT, norm_neg] at h
   rw [Metric.mem_closedBall, dist_zero_right, le_div_iff₀ hc]
   linarith
 

@@ -61,7 +61,9 @@ slide pages), DD = [Dempe–Dutta 2012].
 | D Ex. p. 158 | nonconvex follower: global solution not local for (5.26) | ✓ | `not_isLocalMinOn_kktFeasible_nonconvex_example` | stationary points are `(3/8 ± 1/40) y` |
 | DD, S pp. 180–187 | no Slater anywhere: KKT global ⇏ bilevel global | ✓ | `isMinOn_kktFeasible_noSlater_example`, `not_isMinOn_bilevelFeasible_noSlater_example`, `not_slaterAt_noSlater_example` | |
 | DD, S pp. 153–170 | Slater fails at the solution: bilevel global, KKT has no solution | ☐ | | |
-| DD, S p. 188 | local solutions of (5.26) need not be local bilevel solutions | ☐ | | the DD converse (under Slater, for all multipliers) |
+| DD Thm 3.1 | KKT local for every multiplier ⇒ bilevel local; equivalence under convexity and Slater | ✓ | `isLocalMinOn_bilevelFeasible_of_forall_isLocalMinOn_kktFeasible`, `isLocalMinOn_bilevelFeasible_iff_forall_isLocalMinOn_kktFeasible` | converse needs only `C¹` and (MFCQ) at `(x̄, ȳ)`, no convexity; Slater only at `x̄`; via tube lemma and Thm 4.2 |
+| DD, S p. 188 | local solutions of (5.26) need not be local bilevel solutions | ✓ | `isLocalMinOn_kktFeasible_not_isLocalMinOn_bilevelFeasible_example` | linear example from [Dempe et al. 2015] (in *Solving Methods*, p. 27), not Schmidt's Ex. 4.6 |
+| DD Cor 3.3 | under (CRCQ), vertices of `Λ(x̄, ȳ)` suffice | ☐ | | |
 | D Thm 5.11 | (MFCQ) fails at every feasible point of (5.26) | ☐ | | |
 | D Thm 5.16, 5.17 | F. John / KKT conditions for (5.27) | ☐ | | |
 | D Thm 5.12 | genericity of (PLICQ) | ☐ | | needs Whitney topology and Sard |
