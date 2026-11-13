@@ -2,9 +2,11 @@ import BilevelOptimization.Basic
 import BilevelOptimization.Farkas
 import BilevelOptimization.KKT
 import BilevelOptimization.KKTLocal
+import BilevelOptimization.KKTOptimality
 import BilevelOptimization.KKTRegularity
 import BilevelOptimization.LinearBilevel
 import BilevelOptimization.LipschitzProgram
+import BilevelOptimization.MPCC
 import BilevelOptimization.Parametric
 import BilevelOptimization.ValueFunction
 import BilevelOptimization.ValueFunctionOptimality
