@@ -8,7 +8,7 @@ slide pages), DD = [Dempe–Dutta 2012].
 | # | Statement | Status | Lean | Notes |
 |---|---|---|---|---|
 | D (5.1)–(5.4), (5.7) | solution map, optimistic and pessimistic value functions | ✓ | `solutionMap`, `optimisticValue`, `pessimisticValue` | values in `EReal` |
-| D Def 5.1 | local/global solutions under unique lower-level solutions | ☐ | | subsumed by Def 5.2 when `Ψ` is single-valued |
+| D Def 5.1 | local/global solutions under unique lower-level solutions | ✓ | `isLocalOptimisticSolution_iff`, `isOptimisticSolution_iff` | equivalent to Def 5.2 with or without uniqueness |
 | D Def 5.2 | local and global optimistic solutions | ✓ | `IsLocalOptimisticSolution`, `IsOptimisticSolution` | |
 | D Def 5.3 | local and global pessimistic solutions | ✓ | `IsLocalPessimisticSolution`, `IsPessimisticSolution` | |
 | D (5.5), S p. 77, 87 | joint (optimistic) problem | ✓ | `bilevelFeasible` | |
@@ -19,9 +19,9 @@ slide pages), DD = [Dempe–Dutta 2012].
 | D Thm 5.1, 5.2 | existence of optimistic solutions | ✓ | `exists_isOptimisticSolution_of_isCompact`, `exists_isOptimisticSolution`, `exists_isOptimisticSolution_of_regular` | (C) replaced by compactness of `{(x, y) \| x ∈ Ω, y ∈ K(x)}`; (MFCQ) enters through lower semicontinuity of `K` |
 | D Thm 5.3 | existence of pessimistic solutions (`Ψ` l.s.c.) | ✓ | `exists_isPessimisticSolution`, `lowerSemicontinuousAt_pessimisticValue` | `φ_p` minimized over `solvableSet` (where `Ψ ≠ ∅`); over all of `Ω` the empty-`Ψ` points give `φ_p = -∞` |
 | D Ex. pp. 129, 134; S pp. 74–84 | optimistic solution exists, pessimistic does not | ✓ | `isOptimisticSolution_example`, `not_isPessimisticSolution_example` | the book's formulas for `φ_o`, `φ_p` have the parameter's sign swapped |
-| D Ex. pp. 135–136 | position of coupling constraints matters; inactive constraints matter | ☐ | | |
-| S p. 85 | optimistic = pessimistic for unique lower-level solutions | ☐ | | |
-| S p. 42 | high-point relaxation | ☐ | | |
+| D Ex. pp. 135–136 | position of coupling constraints matters; inactive constraints matter | ✓ | `isMinOn_coupling_upper_example`, `isMinOn_coupling_lower_example`, `coupling_infeasible_example`; `isMinOn_inactive_example`, `isMinOn_inactive_constrained_example` | coupling constraints as an intersection with `bilevelFeasible`; in the second example the book swaps the components of the solution (follower `≈ 0.82`, leader `≈ 10.02`; exactly `2050/2501`, `25051/2501`) |
+| S p. 85 | optimistic = pessimistic for unique lower-level solutions | ✓ | `isOptimisticSolution_iff_isPessimisticSolution`, `isLocalOptimisticSolution_iff_isLocalPessimisticSolution`, `optimisticValue_eq_pessimisticValue` | `Ψ(x)` has at most one point for `x ∈ Ω`; it may be empty |
+| S p. 42 | high-point relaxation | ✓ | `highPointFeasible`, `bilevelFeasible_subset_highPointFeasible`, `iInf_highPointFeasible_le`, `isOptimisticSolution_of_isMinOn_highPointFeasible` | |
 
 ## D Ch. 4: parametric optimization
 
@@ -36,7 +36,7 @@ slide pages), DD = [Dempe–Dutta 2012].
 | — | `gph Ψ` closed above points where `K` is l.s.c. | ✓ | `mem_solutionMap_of_mem_closure`, `isClosed_bilevelFeasible` | |
 | D Def 4.1 | semicontinuity of functions | ✓ | Mathlib `LowerSemicontinuousAt`, `UpperSemicontinuousAt` | |
 | D Thm 4.2 | `Λ` and `SP` u.s.c. under (C), (MFCQ) | ✓ | `upperHemicontinuousAt_lowerMultipliers`, `upperHemicontinuousAt_stationaryMap`, `exists_eventually_lowerMultipliers_subset`, `isClosed_graph_lowerMultipliers` | for `SP`, (MFCQ) at all feasible `(x̄, y)`: the book's (MFCQ) on `SP(x̄)` is not enough (`not_upperHemicontinuousAt_stationaryMap_example`) |
-| D Ex. p. 73 | `Ψ_loc` not u.s.c. (`x³/3 − yx`); D Ex. p. 74: no continuous selection of `Ψ` | ☐ | | |
+| D Ex. p. 73 | `Ψ_loc` not u.s.c. (`x³/3 − yx`); D Ex. p. 74: no continuous selection of `Ψ` | ✓ | `not_upperHemicontinuousAt_localSolutionMap_example`, `not_exists_continuous_selection_example` | |
 | D Def 4.3 | upper / local Lipschitz continuity of set-valued maps | ☐ | | compare `VariationalAnalysis.LipschitzLikeAt` |
 | D Thm 4.4 | strong stability under (MFCQ), (SSOC) [Kojima] | ☐ | | |
 | D Sect. 4.3–4.4, Thm 4.5–4.13 | `PC¹` functions, directional differentiability of local solution functions (SSOC, CRCQ) | ☐ | | |

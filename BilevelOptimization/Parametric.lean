@@ -50,6 +50,11 @@ leader's variable `x`.
   `exists_isOptimisticSolution_of_regular`: Thm. 4.3 and Thm. 5.2 of [Dempe 2002] for smooth
   inequality constraints under (MFCQ).
 
+* `not_upperHemicontinuousAt_localSolutionMap_example`: `Ψ_loc` need not be upper semicontinuous
+  [Dempe 2002, Example on p. 73].
+* `not_exists_continuous_selection_example`: `Ψ` need not have a continuous selection
+  [Dempe 2002, Example on p. 74].
+
 ## Remarks on the book
 
 * Assumption (C) of [Dempe 2002] (compactness of `{(x, y) | g(x, y) ≤ 0, h(x, y) = 0}`) is
@@ -859,6 +864,96 @@ theorem not_upperHemicontinuousAt_stationaryMap_example :
     have := hball (show dist (ε / 2) 0 < ε by
       rw [Real.dist_eq, sub_zero, abs_of_pos (half_pos hε)]; linarith) (hSP (ε / 2) hx)
     exact this
+
+/-- The follower's objective `y³/3 - x y` of the Example on p. 73 of [Dempe 2002]. -/
+private noncomputable def exφ₃ : ℝ × ℝ → ℝ := fun p ↦ p.2 ^ 3 / 3 - p.1 * p.2
+
+/-- The local solution map `Ψ_loc` is in general not upper semicontinuous for nonconvex problems
+[Dempe 2002, Example on p. 73]: the unconstrained problem `min_y y³/3 - x y` has no local
+solution for `x = 0`, but `y = s` is a local solution for `x = s²`, `s > 0`. -/
+theorem not_upperHemicontinuousAt_localSolutionMap_example :
+    localSolutionMap exφ₃ (fun _ ↦ univ) 0 = ∅ ∧
+      (∀ s : ℝ, 0 < s → s ∈ localSolutionMap exφ₃ (fun _ ↦ univ) (s ^ 2)) ∧
+      ¬ UpperHemicontinuousAt (localSolutionMap exφ₃ (fun _ ↦ univ)) 0 := by
+  have h0 : localSolutionMap exφ₃ (fun _ ↦ univ) 0 = ∅ := by
+    refine eq_empty_iff_forall_notMem.2 fun y hy ↦ ?_
+    have hmin : ∀ᶠ z in 𝓝 y, exφ₃ (0, y) ≤ exφ₃ (0, z) := by
+      have := hy.2
+      rwa [IsLocalMinOn, nhdsWithin_univ] at this
+    obtain ⟨ε, hε, hball⟩ := Metric.eventually_nhds_iff.1 hmin
+    have h := hball (show dist (y - ε / 2) y < ε by
+      rw [Real.dist_eq, sub_sub_cancel_left, abs_neg, abs_of_pos (half_pos hε)]; linarith)
+    have hlt : (y - ε / 2) ^ 3 < y ^ 3 :=
+      (Odd.strictMono_pow (by decide : Odd 3)) (by linarith)
+    simp only [exφ₃, zero_mul, sub_zero] at h
+    linarith
+  have hs : ∀ s : ℝ, 0 < s → s ∈ localSolutionMap exφ₃ (fun _ ↦ univ) (s ^ 2) := fun s hs ↦ by
+    refine ⟨mem_univ _, ?_⟩
+    rw [IsLocalMinOn, nhdsWithin_univ]
+    refine Filter.mem_of_superset (Ioi_mem_nhds hs) fun z hz ↦ ?_
+    have hz0 : (0 : ℝ) < z := hz
+    show exφ₃ (s ^ 2, s) ≤ exφ₃ (s ^ 2, z)
+    simp only [exφ₃]
+    nlinarith [mul_nonneg (sq_nonneg (z - s)) (by linarith : (0 : ℝ) ≤ z + 2 * s)]
+  refine ⟨h0, hs, fun husc ↦ ?_⟩
+  obtain ⟨ε, hε, hball⟩ := Metric.eventually_nhds_iff.1 (husc ∅ isOpen_empty (by rw [h0]))
+  set s : ℝ := min 1 (ε / 2) with hsdef
+  have hs0 : 0 < s := lt_min one_pos (half_pos hε)
+  have hs1 : s ≤ 1 := min_le_left _ _
+  have hs2 : s ≤ ε / 2 := min_le_right _ _
+  exact hball (show dist (s ^ 2) 0 < ε by
+    rw [Real.dist_eq, sub_zero, abs_of_pos (by positivity)]; nlinarith) (hs s hs0)
+
+/-- The follower's problem `max_y {(1 - x)(y₁ + y₂) | y₁ + y₂ ≤ 1, y ≥ 0}` of the Example on
+p. 74 of [Dempe 2002], as a minimization problem. -/
+private def exφ₄ : ℝ × ℝ × ℝ → ℝ := fun p ↦ (p.1 - 1) * (p.2.1 + p.2.2)
+
+private def exK₄ : ℝ → Set (ℝ × ℝ) := fun _ ↦ {y | 0 ≤ y.1 ∧ 0 ≤ y.2 ∧ y.1 + y.2 ≤ 1}
+
+/-- The solution set map has in general no continuous selection [Dempe 2002, Example on p. 74]:
+for `max_y {(1 - x)(y₁ + y₂) | y₁ + y₂ ≤ 1, y ≥ 0}` every `Ψ(x)` is nonempty, `y₁ + y₂ = 1` on
+`Ψ(x)` for `x < 1` and `Ψ(x) = {(0, 0)}` for `x > 1`. -/
+theorem not_exists_continuous_selection_example :
+    (∀ x, (solutionMap exφ₄ exK₄ x).Nonempty) ∧
+      ¬ ∃ ψ : ℝ → ℝ × ℝ, Continuous ψ ∧ ∀ x, ψ x ∈ solutionMap exφ₄ exK₄ x := by
+  have h10 : ((1 : ℝ), (0 : ℝ)) ∈ exK₄ 0 := ⟨zero_le_one, le_rfl, by norm_num⟩
+  have h00 : ((0 : ℝ), (0 : ℝ)) ∈ exK₄ 0 := ⟨le_rfl, le_rfl, by norm_num⟩
+  constructor
+  · intro x
+    rcases le_or_gt x 1 with hx | hx
+    · refine ⟨(1, 0), h10, fun z hz ↦ ?_⟩
+      obtain ⟨-, -, hz3⟩ := hz
+      simp only [exφ₄]
+      nlinarith
+    · refine ⟨(0, 0), h00, fun z hz ↦ ?_⟩
+      obtain ⟨hz1, hz2, -⟩ := hz
+      simp only [exφ₄]
+      nlinarith
+  · rintro ⟨ψ, hψ, hsel⟩
+    have hc : Continuous fun x ↦ (ψ x).1 + (ψ x).2 := hψ.fst.add hψ.snd
+    -- `ψ₁ + ψ₂ = 1` for `x < 1`
+    have h1 : Iio (1 : ℝ) ⊆ {x | (ψ x).1 + (ψ x).2 = 1} := fun x hx ↦ by
+      have hx' : x < 1 := hx
+      obtain ⟨⟨-, -, h3⟩, hmin⟩ := hsel x
+      have := hmin (1, 0) h10
+      simp only [exφ₄] at this
+      show (ψ x).1 + (ψ x).2 = 1
+      nlinarith
+    -- `ψ₁ + ψ₂ = 0` for `x > 1`
+    have h2 : Ioi (1 : ℝ) ⊆ {x | (ψ x).1 + (ψ x).2 = 0} := fun x hx ↦ by
+      have hx' : 1 < x := hx
+      obtain ⟨⟨h1, h2, -⟩, hmin⟩ := hsel x
+      have := hmin (0, 0) h00
+      simp only [exφ₄] at this
+      show (ψ x).1 + (ψ x).2 = 0
+      nlinarith
+    have e1 : (ψ 1).1 + (ψ 1).2 = 1 :=
+      ((isClosed_eq hc continuous_const).closure_subset_iff.2 h1)
+        (by rw [closure_Iio]; exact self_mem_Iic)
+    have e2 : (ψ 1).1 + (ψ 1).2 = 0 :=
+      ((isClosed_eq hc continuous_const).closure_subset_iff.2 h2)
+        (by rw [closure_Ioi]; exact self_mem_Ici)
+    linarith
 
 end Example
 

@@ -19,7 +19,7 @@ follower's feasible-set map `K` (or constraints `gᵢ(x, y) ≤ 0`) and the lead
 
 | Topic | Files | Content |
 |---|---|---|
-| Solution concepts | `BilevelOptimization/Basic` | optimistic and pessimistic solutions (D Def. 5.2, 5.3), the joint problem (5.5), lower optimal solutions (5.8), value function reformulation (5.36) and its link to lean-variational, examples |
+| Solution concepts | `BilevelOptimization/Basic` | optimistic and pessimistic solutions (D Def. 5.2, 5.3), the joint problem (5.5), lower optimal solutions (5.8), value function reformulation (5.36) and its link to lean-variational, unique lower-level solutions (D Def. 5.1, S p. 85), the high-point relaxation (S p. 42), examples |
 | Parametric optimization | `BilevelOptimization/Parametric` | semicontinuity of set-valued maps (D Def. 4.2), compactness of the multiplier set (D Thm. 4.1), upper semicontinuity of the multiplier and stationary-point maps and persistence of (MFCQ) (D Thm. 4.2, with a counterexample to the book's hypotheses), continuity of the value function and upper semicontinuity of `Ψ` (D Thm. 4.3), (MFCQ) ⇒ lower semicontinuity of the feasible-set map, existence of optimistic and pessimistic solutions (D Thm. 5.2, 5.3) |
 | Value function | `BilevelOptimization/ValueFunction` | local Lipschitz continuity of the follower's value function (D Thm. 4.14) and the estimate of its Clarke generalized gradient (D Thm. 4.17), with equality under (LICQ) or convexity (D Cor. 4.5–4.7) |
 | Lipschitz programs | `BilevelOptimization/LipschitzProgram` | nonsmooth (MFCQ)/(LICQ) and abnormal multipliers (D Thm. 5.18), the Clarke multiplier rule in Fritz John and KKT form |
