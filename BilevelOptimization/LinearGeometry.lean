@@ -383,7 +383,7 @@ theorem isClosed_supportedCone {F ι : Type*} [NormedAddCommGroup F] [NormedSpac
       · dsimp only
         split_ifs <;> simp
   rw [e]
-  exact isClosed_nonnegSpan _
+  exact VariationalAnalysis.isClosed_nonnegSpan _
 
 namespace ParamLinearBilevel
 

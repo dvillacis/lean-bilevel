@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: David Villacís
 -/
 import BilevelOptimization.ValueFunction
-import BilevelOptimization.Farkas
+import VariationalAnalysis.Analysis.Farkas
 
 /-!
 # Directional derivatives of the optimal value function
@@ -254,7 +254,7 @@ theorem exists_lowerMultiplier_direction (hne : (lowerMultipliers φ g x₀ y₀
         linarith
       rw [map_smul, smul_eq_mul]
       linarith
-  obtain ⟨μ, hμ, hsum⟩ := exists_nonneg_eq_sum_of_forall_nonneg a _ hF
+  obtain ⟨μ, hμ, hsum⟩ := VariationalAnalysis.exists_nonneg_eq_sum_of_forall_nonneg a _ hF
   set τ := μ none with hτ
   set ν : ι → ℝ := fun i ↦ μ (some i) * χ i with hν
   have hχ0 : ∀ i, 0 ≤ χ i := fun i ↦ by
