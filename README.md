@@ -37,7 +37,7 @@ follower's feasible-set map `K` (or constraints `gᵢ(x, y) ≤ 0`) and the lead
 | Strong stability | `BilevelOptimization/StrongStability` | (SSOC), second-order sufficiency, uniqueness of nearby KKT points and Kojima's strong stability under (LICQ) (D Thm. 4.4) |
 | Piecewise smooth solutions | `BilevelOptimization/PiecewiseSolution` | selection functions of (4.19) by the implicit function theorem; the local solution function is `PC¹` (D Thm. 4.10) and its directional derivative solves `QP(λ⁰, r)` (D Thm. 4.11), under (LICQ) and (SSOC) |
 | Upper Lipschitz solutions | `BilevelOptimization/UpperLipschitzSolution` | upper Lipschitz estimate for local solutions and multipliers under (LICQ) and (SSOC) (D Thm. 4.5) |
-| Optimality via strong stability | `BilevelOptimization/StrongStabilityOptimality` | unique lower-level solution function of a convex follower; necessary conditions (5.10), (5.11) with the directional derivative (D Thm. 5.4); non-sufficiency example (D p. 138) |
+| Optimality via strong stability | `BilevelOptimization/StrongStabilityOptimality` | unique lower-level solution function of a convex follower; necessary conditions (5.10), (5.11) with the directional derivative (D Thm. 5.4) and their combinatorial form (5.12); non-sufficiency example (D p. 138) |
 | Local KKT solutions | `BilevelOptimization/KKTLocal` | local solutions of (5.26) for every multiplier are local bilevel solutions, and the local equivalence under convexity and Slater [Dempe–Dutta 2012, Thm. 3.1]; under (CRCQ) the vertices of the multiplier set suffice (Cor. 3.3); a counterexample with a single multiplier |
 
 D = [Dempe 2002]. `ROADMAP.md` lists the statements of the sources with their Lean names or status.

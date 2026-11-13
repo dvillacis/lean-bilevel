@@ -87,7 +87,7 @@ In `StrongStabilityOptimality.lean`.
 | D (5.9) | unique lower-level solution function `Ψ(x) = {y(x)}` near `x̄` | ✓ | `exists_solutionFunction_of_isConvexLower` | convex lower level with (LICQ), (SSOC); `y(·)` is `PC¹` and directionally differentiable with derivative from `QP(λ⁰, r)` |
 | D (ULR) | upper level regularity | ✓ | hypothesis `∃ r₀, ∀ k active, ∇Gₖ(x̄) r₀ < 0` | primal form, as in the book |
 | D Thm 5.4 | (5.10) and, under (ULR), (5.11) at local optimal solutions | ✓ | `nonneg_fderiv_of_isLocalMinOn_bilevelFeasible` | under (LICQ) instead of (MFCQ) + (CRCQ), like D Thm 4.4, 4.10, 4.11; stated in the sign form `∇f(x̄, ȳ)(r, y'(x̄; r)) ≥ 0` (the value of (5.10)/(5.11) is nonnegative); chain rule `tendsto_slope_comp_of_hasFDerivAt` |
-| D (5.12) | combinatorial form via `QP(λ, K)` over index sets | ☐ | | |
+| D (5.12) | combinatorial form via `v_α(λ, K)` over index sets | ✓ | `nonneg_of_lowerQPSystem_of_isLocalMinOn_bilevelFeasible`, `LowerQPSystem`, `eq_of_lowerQPSystem`, `lowerQPObjective_le_of_lowerQPSystem` | under (LICQ), so `EΛ = {λ⁰}`; `α ≥ 0` at every feasible point, without `‖r‖ ≤ 1`; the system is the KKT system of `QP(λ⁰, r)` with `K` active and forces `d = y'(x̄; r)`; the regular case (ULR) included; non-sufficiency as for (5.10), (5.11) (`not_isLocalMinOn_example`) |
 | D Ex. p. 138 | (5.10), (5.11) are not sufficient | ✓ | `solutionMap_example`, `hasDerivAt_example`, `not_isLocalMinOn_example` | `f(u², u) − f(1, 1) = (u − 1)³(u + 3)` |
 | D Ex. pp. 139–140 | assumption (A) without (CRCQ): `Ω(r)` does not determine `y'(x̄; r)` | ☐ | | |
 
