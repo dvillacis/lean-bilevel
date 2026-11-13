@@ -9,4 +9,5 @@ import BilevelOptimization.LipschitzProgram
 import BilevelOptimization.MPCC
 import BilevelOptimization.Parametric
 import BilevelOptimization.ValueFunction
+import BilevelOptimization.ValueFunctionDirectional
 import BilevelOptimization.ValueFunctionOptimality
