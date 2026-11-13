@@ -5,6 +5,8 @@ import BilevelOptimization.KKTLocal
 import BilevelOptimization.KKTOptimality
 import BilevelOptimization.KKTRegularity
 import BilevelOptimization.LinearBilevel
+import BilevelOptimization.LinearGeometry
+import BilevelOptimization.LipschitzMaps
 import BilevelOptimization.LipschitzProgram
 import BilevelOptimization.MPCC
 import BilevelOptimization.Parametric
