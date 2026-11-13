@@ -33,6 +33,7 @@ follower's feasible-set map `K` (or constraints `gᵢ(x, y) ≤ 0`) and the lead
 | Linear bilevel problems | `BilevelOptimization/LinearBilevel` | LP–LP bilevel problems [Schmidt 2024]: KKT conditions of the follower's LP without constraint qualification, weak and strong duality, global equivalence with the KKT, strong-duality and big-M reformulations |
 | Geometry of linear bilevel problems | `BilevelOptimization/LinearGeometry` | D Ch. 3: polyhedral solution map (D Thm. 3.1), existence (D Thm. 3.3), vertex solutions (D Cor. 3.1), existence with leader-dependent follower objective (D Thm. 3.2), optimality via the duality gap (D Thm. 3.11), examples D pp. 30, 33, 38–39 |
 | Lipschitz set-valued maps | `BilevelOptimization/LipschitzMaps` | upper and local Lipschitz continuity (D Def. 4.3) and their relation to semicontinuity and the Lipschitz-like property |
+| Piecewise smooth functions | `BilevelOptimization/PiecewiseSmooth` | `PC¹` functions (D Def. 4.5): local Lipschitz continuity (D Thm. 4.6), directional and Bouligand differentiability (D Def. 4.9–4.10, (4.15)) |
 | Local KKT solutions | `BilevelOptimization/KKTLocal` | local solutions of (5.26) for every multiplier are local bilevel solutions, and the local equivalence under convexity and Slater [Dempe–Dutta 2012, Thm. 3.1]; under (CRCQ) the vertices of the multiplier set suffice (Cor. 3.3); a counterexample with a single multiplier |
 
 D = [Dempe 2002]. `ROADMAP.md` lists the statements of the sources with their Lean names or status.
