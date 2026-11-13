@@ -32,6 +32,15 @@ applies to the nonsmooth KKT reformulation (5.27) of a bilevel problem (Thm. 5.1
 * `exists_kkt_mpcc`: the same with leading multiplier `1` under (MFCQ) for the tightened problem.
 * `nonneg_and_unique_of_isWeakMultiplier`: under (SMFCQ) for the tightened problem (in dual form)
   the multipliers are unique and `ζᵢ ≥ 0`, `ξᵢ ≥ 0` at the biactive indices.
+* `isMinOn_mpccFeasible_example`, `nonsmoothMFCQ_example`,
+  `not_nonneg_of_isWeakMultiplier_example`: the Example on p. 162 of [Dempe 2002]: under (MFCQ)
+  alone no multiplier with `ζ ≥ 0`, `ξ ≥ 0` need exist.
+
+## Remarks on the book
+
+* In the Example on p. 162 of [Dempe 2002] the complementarity condition is printed as
+  `z₁ (z₂ + z₃) = 0`. The constraints `-z₁ ≤ 0`, `-z₁ - z₂ ≤ 0`, the system (5.35) and the
+  solution set given there belong to `z₁ (z₁ + z₂) = 0`, which is used here.
 -/
 
 open Filter Topology Set
@@ -571,5 +580,135 @@ theorem nonneg_and_unique_of_isWeakMultiplier (hz₀ : z₀ ∈ mpccFeasible G H
     exact hξ
 
 end MPCC
+
+/-! ### Example: (MFCQ) does not give strong stationarity -/
+
+section Example
+
+private noncomputable def p₁ : StrongDual ℝ (ℝ × ℝ × ℝ) := ContinuousLinearMap.fst ℝ ℝ (ℝ × ℝ)
+
+private noncomputable def p₂ : StrongDual ℝ (ℝ × ℝ × ℝ) :=
+  (ContinuousLinearMap.fst ℝ ℝ ℝ).comp (ContinuousLinearMap.snd ℝ ℝ (ℝ × ℝ))
+
+private noncomputable def p₃ : StrongDual ℝ (ℝ × ℝ × ℝ) :=
+  (ContinuousLinearMap.snd ℝ ℝ ℝ).comp (ContinuousLinearMap.snd ℝ ℝ (ℝ × ℝ))
+
+@[simp] private theorem p₁_apply (z : ℝ × ℝ × ℝ) : p₁ z = z.1 := rfl
+
+@[simp] private theorem p₂_apply (z : ℝ × ℝ × ℝ) : p₂ z = z.2.1 := rfl
+
+@[simp] private theorem p₃_apply (z : ℝ × ℝ × ℝ) : p₃ z = z.2.2 := rfl
+
+/-- The objective `-z₂ + z₃` of the Example on p. 162 of [Dempe 2002]. -/
+private noncomputable def exF : StrongDual ℝ (ℝ × ℝ × ℝ) := -p₂ + p₃
+
+/-- The inequality constraints `-z₁ + z₂ - z₃ ≤ 0`, `-z₃ ≤ 0`. -/
+private noncomputable def exG : Fin 2 → StrongDual ℝ (ℝ × ℝ × ℝ) := ![-p₁ + p₂ - p₃, -p₃]
+
+/-- The complementarity constraint `min {z₁, z₁ + z₂} = 0`, as `g = -z₁ ≤ 0`,
+`v = z₁ + z₂ ≥ 0`. -/
+private noncomputable def exg : Unit → StrongDual ℝ (ℝ × ℝ × ℝ) := fun _ ↦ -p₁
+
+private noncomputable def exv : Unit → StrongDual ℝ (ℝ × ℝ × ℝ) := fun _ ↦ p₁ + p₂
+
+private theorem exG_zero (z : ℝ × ℝ × ℝ) : exG 0 z = -z.1 + z.2.1 - z.2.2 := rfl
+
+private theorem exG_one (z : ℝ × ℝ × ℝ) : exG 1 z = -z.2.2 := rfl
+
+/-- Example on p. 162 of [Dempe 2002]: for
+`min {-z₂ + z₃ | -z₁ + z₂ - z₃ ≤ 0, -z₃ ≤ 0, min {z₁, z₁ + z₂} = 0}` the origin is a global
+solution. -/
+theorem isMinOn_mpccFeasible_example :
+    (0 : ℝ × ℝ × ℝ) ∈ mpccFeasible (fun j ↦ ⇑(exG j)) (Empty.elim : Empty → ℝ × ℝ × ℝ → ℝ)
+        (fun i ↦ ⇑(exg i)) (fun i ↦ ⇑(exv i)) ∧
+      IsMinOn (⇑exF) (mpccFeasible (fun j ↦ ⇑(exG j)) (Empty.elim : Empty → ℝ × ℝ × ℝ → ℝ)
+        (fun i ↦ ⇑(exg i)) (fun i ↦ ⇑(exv i))) 0 := by
+  refine ⟨⟨fun j ↦ by simp, fun e ↦ e.elim, fun i ↦ by simp⟩, isMinOn_iff.2 fun z hz ↦ ?_⟩
+  obtain ⟨hG, -, hm⟩ := hz
+  have h0 : exG 0 z ≤ 0 := hG 0
+  rw [exG_zero] at h0
+  have hm' : min (-(exg () z)) (exv () z) = 0 := hm ()
+  obtain ⟨a1, a2, a3⟩ := min_eq_zero_iff.1 hm'
+  simp only [exg, exv, neg_apply, add_apply, p₁_apply, p₂_apply, neg_neg] at a1 a2 a3
+  simp only [exF, map_zero, add_apply, neg_apply, p₂_apply, p₃_apply]
+  rcases mul_eq_zero.1 a3 with h | h
+  · linarith
+  · have h1 : exG 1 z ≤ 0 := hG 1
+    rw [exG_one] at h1
+    linarith
+
+/-- In the Example on p. 162 of [Dempe 2002], (MFCQ) holds at the origin for the tightened
+problem, with equality constraints `z₁ = 0`, `z₁ + z₂ = 0`. -/
+theorem nonsmoothMFCQ_example :
+    NonsmoothMFCQ (fun j ↦ ⇑(exG j))
+      (tightenedEqualities (Empty.elim : Empty → ℝ × ℝ × ℝ → ℝ) (fun i ↦ ⇑(exg i))
+        (fun i ↦ ⇑(exv i)) 0) 0 := by
+  classical
+  intro η hη ξ hξ
+  have eη : ∀ j, η j = exG j := fun j ↦
+    eq_of_mem_clarkeSubdiff_of_hasStrictFDerivAt (exG j).hasStrictFDerivAt (hη j (map_zero _))
+  have eg : ∀ i : {i : Unit // exg i (0 : ℝ × ℝ × ℝ) = 0}, ξ (Sum.inr (Sum.inl i)) = -p₁ :=
+    fun i ↦ eq_of_mem_clarkeSubdiff_of_hasStrictFDerivAt (exg i.1).hasStrictFDerivAt
+      (hξ (Sum.inr (Sum.inl i)))
+  have ev : ∀ i : {i : Unit // exv i (0 : ℝ × ℝ × ℝ) = 0}, ξ (Sum.inr (Sum.inr i)) = p₁ + p₂ :=
+    fun i ↦ eq_of_mem_clarkeSubdiff_of_hasStrictFDerivAt (exv i.1).hasStrictFDerivAt
+      (hξ (Sum.inr (Sum.inr i)))
+  refine ⟨Fintype.linearIndependent_iff.2 fun c hc ↦ ?_, ((0 : ℝ), (0 : ℝ), (1 : ℝ)), fun j _ ↦ ?_,
+    ?_⟩
+  · -- the gradients `-e₁`, `e₁ + e₂` of the equality constraints are linearly independent
+    rw [Fintype.sum_sum_type, Fintype.sum_sum_type] at hc
+    simp only [Finset.univ_eq_empty, Finset.sum_empty, zero_add, eg, ev] at hc
+    have h1 := congrArg (fun T : StrongDual ℝ (ℝ × ℝ × ℝ) ↦ T (1, 0, 0)) hc
+    have h2 := congrArg (fun T : StrongDual ℝ (ℝ × ℝ × ℝ) ↦ T (0, 1, 0)) hc
+    simp only [add_apply, sum_apply, smul_apply, neg_apply, p₁_apply, p₂_apply, smul_eq_mul,
+      mul_neg, mul_one, mul_zero, add_zero, neg_zero, Finset.sum_const_zero, zero_apply,
+      Finset.sum_neg_distrib, mul_add, Finset.sum_add_distrib] at h1 h2
+    have s1 : ∀ i : {i : Unit // exg i (0 : ℝ × ℝ × ℝ) = 0},
+        c (Sum.inr (Sum.inl i)) = ∑ i, c (Sum.inr (Sum.inl i)) := fun i ↦ by
+      rw [Finset.sum_eq_single i (fun j _ hj ↦ absurd (Subsingleton.elim j i) hj)
+        fun hi ↦ absurd (Finset.mem_univ i) hi]
+    have s2 : ∀ i : {i : Unit // exv i (0 : ℝ × ℝ × ℝ) = 0},
+        c (Sum.inr (Sum.inr i)) = ∑ i, c (Sum.inr (Sum.inr i)) := fun i ↦ by
+      rw [Finset.sum_eq_single i (fun j _ hj ↦ absurd (Subsingleton.elim j i) hj)
+        fun hi ↦ absurd (Finset.mem_univ i) hi]
+    rintro (e | i | i)
+    · exact e.elim
+    · rw [s1 i]
+      linarith
+    · rw [s2 i]
+      linarith
+  · rw [eη j]
+    fin_cases j
+    · show exG 0 ((0 : ℝ), (0 : ℝ), (1 : ℝ)) < 0
+      rw [exG_zero]
+      norm_num
+    · show exG 1 ((0 : ℝ), (0 : ℝ), (1 : ℝ)) < 0
+      rw [exG_one]
+      norm_num
+  · rintro (e | i | i)
+    · exact e.elim
+    · rw [eg i]
+      simp
+    · rw [ev i]
+      simp
+
+/-- In the Example on p. 162 of [Dempe 2002] no multiplier of the tightened problem at the origin
+has `κ ≥ 0`, `ζ ≥ 0` and `ξ ≥ 0`: the conclusion of `nonneg_and_unique_of_isWeakMultiplier`
+(Thm. 5.17, second part) does not hold under (MFCQ) alone. -/
+theorem not_nonneg_of_isWeakMultiplier_example
+    {m : (Fin 2 → ℝ) × (Empty → ℝ) × (Unit → ℝ) × (Unit → ℝ)}
+    (hm : IsWeakMultiplier (fun j ↦ ⇑(exG j)) (fun i ↦ ⇑(exg i)) (fun i ↦ ⇑(exv i)) 0 exF exG
+      (Empty.elim : Empty → StrongDual ℝ (ℝ × ℝ × ℝ)) exg exv m) (hκ : ∀ j, 0 ≤ m.1 j) :
+    ¬ (0 ≤ m.2.2.1 () ∧ 0 ≤ m.2.2.2 ()) := by
+  rintro ⟨hζ, hξ⟩
+  obtain ⟨-, -, -, hsum⟩ := hm
+  have h1 := congrArg (fun T : StrongDual ℝ (ℝ × ℝ × ℝ) ↦ T (1, 0, 0)) hsum
+  have h2 := congrArg (fun T : StrongDual ℝ (ℝ × ℝ × ℝ) ↦ T (0, 1, 0)) hsum
+  simp [exF, exG, exg, exv, Fin.sum_univ_two] at h1 h2
+  have := hκ 0
+  have := hκ 1
+  linarith
+
+end Example
 
 end Bilevel

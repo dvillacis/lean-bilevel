@@ -60,7 +60,7 @@ slide pages), DD = [Dempe–Dutta 2012].
 | D Thm 5.15 | local optimistic ⇒ local for (5.26) | ✓ | `isLocalMinOn_kktFeasible_of_isLocalMinOn`, `IsLocalOptimisticSolution.isLocalMinOn_kktFeasible` | (MFCQ) only needed for `Λ ≠ ∅` |
 | D Ex. p. 158 | nonconvex follower: global solution not local for (5.26) | ✓ | `not_isLocalMinOn_kktFeasible_nonconvex_example` | stationary points are `(3/8 ± 1/40) y` |
 | DD, S pp. 180–187 | no Slater anywhere: KKT global ⇏ bilevel global | ✓ | `isMinOn_kktFeasible_noSlater_example`, `not_isMinOn_bilevelFeasible_noSlater_example`, `not_slaterAt_noSlater_example` | |
-| DD, S pp. 153–170 | Slater fails at the solution: bilevel global, KKT has no solution | ☐ | | |
+| DD, S pp. 153–170 | Slater fails at the solution: bilevel global, KKT has no solution | ✓ | `isMinOn_bilevelFeasible_slaterFails_example`, `not_exists_isMinOn_kktFeasible_slaterFails_example`, `mem_kktFeasible_slaterFails_example`, `not_slaterAt_slaterFails_example`, `slaterAt_slaterFails_example` | feasible points `x = 2s²`, `y = (-s, -s²)`, `λ = 1/(4s)`; on the slides the stationarity condition has `2λ₂y₂` for `2λ₂y₁` |
 | DD Thm 3.1 | KKT local for every multiplier ⇒ bilevel local; equivalence under convexity and Slater | ✓ | `isLocalMinOn_bilevelFeasible_of_forall_isLocalMinOn_kktFeasible`, `isLocalMinOn_bilevelFeasible_iff_forall_isLocalMinOn_kktFeasible` | converse needs only `C¹` and (MFCQ) at `(x̄, ȳ)`, no convexity; Slater only at `x̄`; via tube lemma and Thm 4.2 |
 | DD, S p. 188 | local solutions of (5.26) need not be local bilevel solutions | ✓ | `isLocalMinOn_kktFeasible_not_isLocalMinOn_bilevelFeasible_example` | linear example from [Dempe et al. 2015] (in *Solving Methods*, p. 27), not Schmidt's Ex. 4.6 |
 | D p. 77 | (CRCQ) | ✓ | `LowerCRCQ` | for the follower's inequality constraints |
@@ -71,7 +71,7 @@ slide pages), DD = [Dempe–Dutta 2012].
 | [Scheel–Scholtes 2000] | F. John / KKT conditions for programs with `min {-gᵢ, vᵢ} = 0` constraints; strong stationarity | ✓ | `exists_fritzJohn_mpcc`, `exists_kkt_mpcc`, `nonneg_and_unique_of_isWeakMultiplier`, `mpccFeasible`, `IsWeakMultiplier` | the abstract results behind D Thm 5.16, 5.17; (SMFCQ) in dual form |
 | D Thm 5.16 | F. John conditions (5.29) for (5.27) | ✓ | `exists_fritzJohn_kktReformulation`, `lagrangianSecondDeriv` | `φ`, `gᵢ` of class `C²`; `ζᵢ ξᵢ ≥ 0` for all `i`; `κ₀ ∈ {0, 1}`; no lower-level equality constraints |
 | D Thm 5.17 | KKT conditions (5.34) under (MFCQ) for (5.30); (5.35) and uniqueness under (SMFCQ) | ✓ | `exists_kkt_kktReformulation`, `nonneg_and_unique_kktReformulation`, `TightenedMFCQ`, `TightenedSMFCQ` | constraint qualifications stated without coordinates; second part by relaxing one biactive constraint and uniqueness of multipliers, instead of Bouligand stationarity |
-| D Ex. p. 162 | (5.35) fails under (MFCQ) alone | ☐ | | |
+| D Ex. p. 162 | (5.35) fails under (MFCQ) alone | ✓ | `isMinOn_mpccFeasible_example`, `nonsmoothMFCQ_example`, `not_nonneg_of_isWeakMultiplier_example` | the complementarity condition is `z₁ (z₁ + z₂) = 0`, misprinted as `z₁ (z₂ + z₃) = 0` |
 | D Thm 5.12 | genericity of (PLICQ) | ☐ | | needs Whitney topology and Sard |
 | — | Farkas' lemma, closedness of finitely generated cones, conic Carathéodory | ✓ | `exists_nonneg_eq_sum_of_forall_nonneg`, `isClosed_nonnegSpan`, `exists_nonneg_linearIndependent_sum_eq` | in `Farkas.lean`; candidate for lean-variational |
 | S p. 118 | LP–LP bilevel problem | ✓ | `LinearBilevel` | rows as continuous linear functionals; leader constraints may couple `x` and `y` |

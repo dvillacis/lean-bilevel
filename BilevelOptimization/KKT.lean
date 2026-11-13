@@ -48,6 +48,10 @@ Partial derivatives in `y` are derivatives of the sections `z ↦ φ(x, z)`, `z 
 * `isMinOn_kktFeasible_noSlater_example`, `not_isMinOn_bilevelFeasible_noSlater_example`:
   without Slater's condition global solutions of (5.26) need not solve (5.5)
   [Dempe–Dutta 2012; Schmidt 2024, pp. 180–187].
+* `isMinOn_bilevelFeasible_slaterFails_example`,
+  `not_exists_isMinOn_kktFeasible_slaterFails_example`: if Slater's condition fails at the
+  solution, the bilevel problem may have a global solution while (5.26) has none
+  [Schmidt 2024, pp. 153–170].
 
 ## Remarks on the sources
 
@@ -62,6 +66,8 @@ Partial derivatives in `y` are derivatives of the sections `z ↦ φ(x, z)`, `z 
   differentiability are assumed for all `x ∈ Ω`.
 * In the Example on p. 158 of [Dempe 2002] the nonzero stationary points of the follower's
   problem are `x = (3/8 ± 1/40) y`, not `(3/8 ± 1/1600) y`.
+* On [Schmidt 2024, pp. 166–170] the stationarity condition in `y₁` reads
+  `1 + 2λ₁y₁ + 2λ₂y₂ = 0`; it is `1 + 2λ₁y₁ + 2λ₂y₁ = 0`.
 -/
 
 open Filter Topology Set
@@ -473,6 +479,135 @@ theorem not_isMinOn_bilevelFeasible_noSlater_example :
     simp [exφ', hz0]
   have := isMinOn_iff.1 h _ hmem
   norm_num at this
+
+/-- The follower's constraints `y₁² - y₂ ≤ x`, `y₁² + y₂ ≤ 0` of [Schmidt 2024, pp. 153–170]. -/
+private def exg₂ : Fin 2 → ℝ × ℝ × ℝ → ℝ :=
+  ![fun p ↦ p.2.1 ^ 2 - p.2.2 - p.1, fun p ↦ p.2.1 ^ 2 + p.2.2]
+
+/-- The follower's objective `y₁` of [Schmidt 2024, pp. 153–170]. -/
+private def exφ₂ : ℝ × ℝ × ℝ → ℝ := fun p ↦ p.2.1
+
+private theorem exg₂_zero (p : ℝ × ℝ × ℝ) : exg₂ 0 p = p.2.1 ^ 2 - p.2.2 - p.1 := rfl
+
+private theorem exg₂_one (p : ℝ × ℝ × ℝ) : exg₂ 1 p = p.2.1 ^ 2 + p.2.2 := rfl
+
+private theorem hasFDerivAt_sq_fst (y : ℝ × ℝ) :
+    HasFDerivAt (fun z : ℝ × ℝ ↦ z.1 ^ 2)
+      ((2 * y.1) • ContinuousLinearMap.fst ℝ ℝ ℝ) y := by
+  refine ((hasFDerivAt_fst (𝕜 := ℝ) (p := y)).pow 2).congr_fderiv ?_
+  norm_num
+
+private theorem fderiv_exφ₂ (x : ℝ) (y : ℝ × ℝ) :
+    fderiv ℝ (fun z ↦ exφ₂ (x, z)) y = ContinuousLinearMap.fst ℝ ℝ ℝ :=
+  (hasFDerivAt_fst (𝕜 := ℝ) (p := y)).fderiv
+
+private theorem fderiv_exg₂_zero (x : ℝ) (y : ℝ × ℝ) :
+    fderiv ℝ (fun z ↦ exg₂ 0 (x, z)) y =
+      (2 * y.1) • ContinuousLinearMap.fst ℝ ℝ ℝ - ContinuousLinearMap.snd ℝ ℝ ℝ :=
+  (((hasFDerivAt_sq_fst y).sub hasFDerivAt_snd).sub_const x).fderiv
+
+private theorem fderiv_exg₂_one (x : ℝ) (y : ℝ × ℝ) :
+    fderiv ℝ (fun z ↦ exg₂ 1 (x, z)) y =
+      (2 * y.1) • ContinuousLinearMap.fst ℝ ℝ ℝ + ContinuousLinearMap.snd ℝ ℝ ℝ :=
+  ((hasFDerivAt_sq_fst y).add hasFDerivAt_snd).fderiv
+
+/-- The KKT conditions of the follower's problem of [Schmidt 2024, pp. 153–170] in coordinates. -/
+private theorem isLowerKKT_exg₂ {x : ℝ} {y : ℝ × ℝ} {lam : Fin 2 → ℝ} :
+    IsLowerKKT exφ₂ exg₂ x y lam ↔ y.1 ^ 2 - y.2 - x ≤ 0 ∧ y.1 ^ 2 + y.2 ≤ 0 ∧ 0 ≤ lam 0 ∧
+      0 ≤ lam 1 ∧ lam 0 * (y.1 ^ 2 - y.2 - x) = 0 ∧ lam 1 * (y.1 ^ 2 + y.2) = 0 ∧
+      1 + 2 * (lam 0 + lam 1) * y.1 = 0 ∧ lam 1 = lam 0 := by
+  have hst : fderiv ℝ (fun z ↦ exφ₂ (x, z)) y +
+      ∑ i, lam i • fderiv ℝ (fun z ↦ exg₂ i (x, z)) y = 0 ↔
+      1 + 2 * (lam 0 + lam 1) * y.1 = 0 ∧ lam 1 = lam 0 := by
+    rw [Fin.sum_univ_two, fderiv_exφ₂, fderiv_exg₂_zero, fderiv_exg₂_one]
+    constructor
+    · intro h0
+      have h1 := congrArg (fun T : ℝ × ℝ →L[ℝ] ℝ ↦ T (1, 0)) h0
+      have h2 := congrArg (fun T : ℝ × ℝ →L[ℝ] ℝ ↦ T (0, 1)) h0
+      simp at h1 h2
+      exact ⟨by linarith, by linarith⟩
+    · rintro ⟨h1, h2⟩
+      refine ContinuousLinearMap.ext fun w ↦ ?_
+      simp
+      linear_combination w.1 * h1 + w.2 * h2
+  simp only [IsLowerKKT, Fin.forall_fin_two, exg₂_zero, exg₂_one, hst]
+  tauto
+
+/-- In the example of [Schmidt 2024, pp. 153–170] Slater's condition fails at `x = 0`: the only
+feasible point of the follower's problem is `y = (0, 0)`. -/
+theorem not_slaterAt_slaterFails_example : ¬ SlaterAt exg₂ 0 := by
+  rintro ⟨z, hz⟩
+  have h0 := hz 0
+  have h1 := hz 1
+  rw [exg₂_zero] at h0
+  rw [exg₂_one] at h1
+  simp only at h0 h1
+  nlinarith [sq_nonneg z.1]
+
+/-- In the example of [Schmidt 2024, pp. 153–170] Slater's condition holds for every `x > 0`. -/
+theorem slaterAt_slaterFails_example {x : ℝ} (hx : 0 < x) : SlaterAt exg₂ x := by
+  refine ⟨(0, -x / 2), ?_⟩
+  rw [Fin.forall_fin_two, exg₂_zero, exg₂_one]
+  constructor <;> simp <;> linarith
+
+/-- Slater's condition fails at the solution [Schmidt 2024, pp. 153–170]: for
+`min {x | x ≥ 0, y ∈ Argmin_y {y₁ | y₁² - y₂ ≤ x, y₁² + y₂ ≤ 0}}` the point `(0, (0, 0))` is a
+global solution of the bilevel problem (5.5). -/
+theorem isMinOn_bilevelFeasible_slaterFails_example :
+    ((0 : ℝ), ((0 : ℝ), (0 : ℝ))) ∈ bilevelFeasible exφ₂ (lowerFeasible exg₂) (Ici 0) ∧
+      IsMinOn (fun p : ℝ × ℝ × ℝ ↦ p.1) (bilevelFeasible exφ₂ (lowerFeasible exg₂) (Ici 0))
+        (0, (0, 0)) := by
+  refine ⟨⟨mem_Ici.2 le_rfl, ?_, fun z hz ↦ ?_⟩, isMinOn_iff.2 fun p hp ↦ hp.1⟩
+  · intro i
+    fin_cases i <;> simp [exg₂]
+  · have h0 := hz 0
+    have h1 := hz 1
+    rw [exg₂_zero] at h0
+    rw [exg₂_one] at h1
+    simp only at h0 h1
+    have hz1 : z.1 = 0 := by nlinarith [sq_nonneg z.1]
+    simp [exφ₂, hz1]
+
+/-- In the example of [Schmidt 2024, pp. 153–170] the KKT reformulation (5.26) has feasible
+points with arbitrarily small objective value: `x = 2s²`, `y = (-s, -s²)`, `λ₁ = λ₂ = 1/(4s)`
+for `s > 0`. -/
+theorem mem_kktFeasible_slaterFails_example {s : ℝ} (hs : 0 < s) :
+    ((2 * s ^ 2, (-s, -s ^ 2)), ![1 / (4 * s), 1 / (4 * s)]) ∈
+      kktFeasible exφ₂ exg₂ (Ici 0) := by
+  refine ⟨mem_Ici.2 (by positivity), isLowerKKT_exg₂.2 ?_⟩
+  have h4 : (0 : ℝ) < 1 / (4 * s) := by positivity
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+  refine ⟨by nlinarith, by nlinarith, h4.le, h4.le, ?_, ?_, ?_, trivial⟩
+  · ring
+  · ring
+  · field_simp
+    ring
+
+/-- The KKT reformulation (5.26) of the example of [Schmidt 2024, pp. 153–170] has no global
+solution, although the bilevel problem has one (`isMinOn_bilevelFeasible_slaterFails_example`):
+at `x = 0` the follower's solution `y = (0, 0)` has no multipliers, and every feasible point has
+`x > 0`, which can be decreased. -/
+theorem not_exists_isMinOn_kktFeasible_slaterFails_example :
+    ¬ ∃ q ∈ kktFeasible exφ₂ exg₂ (Ici 0),
+      IsMinOn (fun q : (ℝ × ℝ × ℝ) × (Fin 2 → ℝ) ↦ q.1.1) (kktFeasible exφ₂ exg₂ (Ici 0)) q := by
+  rintro ⟨q, ⟨hx, hK⟩, hmin⟩
+  obtain ⟨h0, h1, -, -, -, -, hst, -⟩ := isLowerKKT_exg₂.1 hK
+  have hx0 : 0 ≤ q.1.1 := hx
+  -- `x = 0` forces `y₁ = 0`, which contradicts stationarity
+  have hpos : 0 < q.1.1 := by
+    refine lt_of_le_of_ne hx0 fun hx' ↦ ?_
+    have hy : q.1.2.1 = 0 := by nlinarith [sq_nonneg q.1.2.1]
+    rw [hy] at hst
+    norm_num at hst
+  -- a feasible point with smaller objective value
+  set s : ℝ := min 1 q.1.1 / 2 with hs
+  have hm0 : 0 < min 1 q.1.1 := lt_min one_pos hpos
+  have hm1 : min 1 q.1.1 ≤ 1 := min_le_left _ _
+  have hm2 : min 1 q.1.1 ≤ q.1.1 := min_le_right _ _
+  have hs0 : 0 < s := by positivity
+  have := isMinOn_iff.1 hmin _ (mem_kktFeasible_slaterFails_example hs0)
+  simp only at this
+  nlinarith
 
 end Examples
 
