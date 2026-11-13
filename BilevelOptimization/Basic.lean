@@ -42,6 +42,19 @@ problem is `min_y {φ(x, y) | y ∈ K(x)}` (5.1) with solution map `Ψ = solutio
   feasible set of (5.5) is compact (the abstract core of Thm. 5.2).
 * `isOptimisticSolution_example`, `not_isPessimisticSolution_example`: an optimistic solution
   exists while no pessimistic solution does [Dempe 2002, Example on pp. 129, 134].
+* `isLocalOptimisticSolution_iff`: Def. 5.1 of [Dempe 2002] characterizes local optimistic
+  solutions, with or without unique lower-level solutions.
+* `isOptimisticSolution_iff_isPessimisticSolution`,
+  `isLocalOptimisticSolution_iff_isLocalPessimisticSolution`: for unique lower-level solutions
+  the optimistic and the pessimistic problems coincide [Schmidt 2024, p. 85].
+* `highPointFeasible`, `iInf_highPointFeasible_le`,
+  `isOptimisticSolution_of_isMinOn_highPointFeasible`: the high-point relaxation
+  [Schmidt 2024, p. 42].
+* `isMinOn_coupling_upper_example`, `isMinOn_coupling_lower_example`,
+  `coupling_infeasible_example`: the solution depends on the level in which a coupling
+  constraint is placed [Dempe 2002, Example on pp. 135–136].
+* `isMinOn_inactive_example`, `isMinOn_inactive_constrained_example`: the solution depends on
+  inactive lower-level constraints [Dempe 2002, second Example on p. 136].
 
 ## Remarks on the book
 
@@ -53,6 +66,9 @@ problem is `min_y {φ(x, y) | y ∈ K(x)}` (5.1) with solution map `Ψ = solutio
   `Ψ(y) = Argmin_x {-xy : 0 ≤ x ≤ 1}` as stated, `φ_o(y) = y²` for `y ≤ 0`,
   `φ_o(y) = 1 + y²` for `y > 0`, `φ_p(y) = y²` for `y < 0` and `φ_p(y) = 1 + y²` for `y ≥ 0`.
   The conclusion (optimistic solution `y = 0`, no pessimistic solution) is unchanged.
+
+* In the second Example on p. 136 the components of the solution are swapped: in the book's
+  letters `x* ≈ 0.82` (follower) and `y* ≈ 10.02` (leader), as `x = 50 y - 500`.
 -/
 
 open Filter Topology Set
@@ -201,6 +217,104 @@ theorem IsPessimisticSolution.isLocalPessimisticSolution
   ⟨h.1, h.2.1, h.2.2.1, IsMinOn.localize h.2.2.2⟩
 
 end Local
+
+/-- Def. 5.1 of [Dempe 2002]: `(x₀, y₀)` is a local optimistic solution iff it is feasible and
+`f(x₀, y₀) ≤ f(x, y)` for all `x ∈ Ω` near `x₀` and all `y ∈ Ψ(x)`. No uniqueness of the
+lower-level solutions is needed. -/
+theorem isLocalOptimisticSolution_iff [TopologicalSpace E] :
+    IsLocalOptimisticSolution f φ K Ω x₀ y₀ ↔ x₀ ∈ Ω ∧ y₀ ∈ solutionMap φ K x₀ ∧
+      ∀ᶠ x in 𝓝[Ω] x₀, ∀ y ∈ solutionMap φ K x, f (x₀, y₀) ≤ f (x, y) := by
+  constructor
+  · rintro ⟨hx, hy, hbest, hmin⟩
+    refine ⟨hx, hy, Filter.Eventually.mono hmin fun x h y hy' ↦ ?_⟩
+    have h1 : optimisticValue f φ K x₀ ≤ optimisticValue f φ K x := h
+    rw [optimisticValue_eq hy hbest] at h1
+    exact EReal.coe_le_coe_iff.1 (h1.trans (optimisticValue_le hy'))
+  · rintro ⟨hx, hy, hev⟩
+    have hbest : ∀ y ∈ solutionMap φ K x₀, f (x₀, y₀) ≤ f (x₀, y) := hev.self_of_nhdsWithin hx
+    refine ⟨hx, hy, hbest, Filter.Eventually.mono hev fun x h ↦ ?_⟩
+    show optimisticValue f φ K x₀ ≤ optimisticValue f φ K x
+    rw [optimisticValue_eq hy hbest]
+    exact le_iInf₂ fun y hy' ↦ EReal.coe_le_coe_iff.2 (h y hy')
+
+/-! ### Unique lower-level solutions -/
+
+theorem optimisticValue_eq_top (h : ¬ (solutionMap φ K x).Nonempty) :
+    optimisticValue f φ K x = ⊤ := by
+  simp [optimisticValue, not_nonempty_iff_eq_empty.1 h]
+
+/-- If the follower's problem has exactly one solution at `x`, then `φ_o(x) = φ_p(x)`. -/
+theorem optimisticValue_eq_pessimisticValue (hu : (solutionMap φ K x).Subsingleton)
+    (hne : (solutionMap φ K x).Nonempty) :
+    optimisticValue f φ K x = pessimisticValue f φ K x := by
+  obtain ⟨y, hy⟩ := hne
+  rw [optimisticValue_eq hy fun z hz ↦ (congrArg (fun w ↦ f (x, w)) (hu hy hz)).le,
+    pessimisticValue_eq hy fun z hz ↦ (congrArg (fun w ↦ f (x, w)) (hu hz hy)).le]
+
+private theorem optimisticValue_le_iff (hu₀ : (solutionMap φ K x₀).Subsingleton)
+    (hy₀ : y₀ ∈ solutionMap φ K x₀) (hu : (solutionMap φ K x).Subsingleton) (hx : x ∈ Ω) :
+    optimisticValue f φ K x₀ ≤ optimisticValue f φ K x ↔
+      (x ∈ solvableSet φ K Ω → pessimisticValue f φ K x₀ ≤ pessimisticValue f φ K x) := by
+  by_cases hne : (solutionMap φ K x).Nonempty
+  · rw [optimisticValue_eq_pessimisticValue hu₀ ⟨y₀, hy₀⟩,
+      optimisticValue_eq_pessimisticValue hu hne]
+    exact ⟨fun h _ ↦ h, fun h ↦ h ⟨hx, hne⟩⟩
+  · rw [optimisticValue_eq_top hne]
+    exact ⟨fun _ hs ↦ absurd hs.2 hne, fun _ ↦ le_top⟩
+
+/-- If the follower's problem has at most one solution for every `x ∈ Ω`, the optimistic and the
+pessimistic bilevel problems have the same global solutions [Schmidt 2024, p. 85]. -/
+theorem isOptimisticSolution_iff_isPessimisticSolution
+    (hu : ∀ x ∈ Ω, (solutionMap φ K x).Subsingleton) :
+    IsOptimisticSolution f φ K Ω x₀ y₀ ↔ IsPessimisticSolution f φ K Ω x₀ y₀ := by
+  constructor
+  · rintro ⟨hx, hy, -, hmin⟩
+    exact ⟨hx, hy, fun y hy' ↦ (congrArg (fun w ↦ f (x₀, w)) (hu x₀ hx hy' hy)).le,
+      isMinOn_iff.2 fun x hs ↦
+        (optimisticValue_le_iff (hu x₀ hx) hy (hu x hs.1) hs.1).1 (isMinOn_iff.1 hmin x hs.1) hs⟩
+  · rintro ⟨hx, hy, -, hmin⟩
+    exact ⟨hx, hy, fun y hy' ↦ (congrArg (fun w ↦ f (x₀, w)) (hu x₀ hx hy hy')).le,
+      isMinOn_iff.2 fun x hxΩ ↦
+        (optimisticValue_le_iff (hu x₀ hx) hy (hu x hxΩ) hxΩ).2 (isMinOn_iff.1 hmin x)⟩
+
+/-- If the follower's problem has at most one solution for every `x ∈ Ω`, the optimistic and the
+pessimistic bilevel problems have the same local solutions [Schmidt 2024, p. 85]. -/
+theorem isLocalOptimisticSolution_iff_isLocalPessimisticSolution [TopologicalSpace E]
+    (hu : ∀ x ∈ Ω, (solutionMap φ K x).Subsingleton) :
+    IsLocalOptimisticSolution f φ K Ω x₀ y₀ ↔ IsLocalPessimisticSolution f φ K Ω x₀ y₀ := by
+  constructor
+  · rintro ⟨hx, hy, -, hmin⟩
+    refine ⟨hx, hy, fun y hy' ↦ (congrArg (fun w ↦ f (x₀, w)) (hu x₀ hx hy' hy)).le, ?_⟩
+    exact eventually_nhdsWithin_iff.2 ((eventually_nhdsWithin_iff.1 hmin).mono fun x h hs ↦
+      (optimisticValue_le_iff (hu x₀ hx) hy (hu x hs.1) hs.1).1 (h hs.1) hs)
+  · rintro ⟨hx, hy, -, hmin⟩
+    refine ⟨hx, hy, fun y hy' ↦ (congrArg (fun w ↦ f (x₀, w)) (hu x₀ hx hy hy')).le, ?_⟩
+    exact eventually_nhdsWithin_iff.2 ((eventually_nhdsWithin_iff.1 hmin).mono fun x h hxΩ ↦
+      (optimisticValue_le_iff (hu x₀ hx) hy (hu x hxΩ) hxΩ).2 h)
+
+/-! ### The high-point relaxation -/
+
+/-- The feasible set `{(x, y) | x ∈ Ω, y ∈ K(x)}` of the high-point relaxation
+[Schmidt 2024, p. 42]: the bilevel problem without the follower's optimality. -/
+def highPointFeasible (K : E → Set F) (Ω : Set E) : Set (E × F) :=
+  {p | p.1 ∈ Ω ∧ p.2 ∈ K p.1}
+
+theorem bilevelFeasible_subset_highPointFeasible :
+    bilevelFeasible φ K Ω ⊆ highPointFeasible K Ω :=
+  fun _ hp ↦ ⟨hp.1, hp.2.1⟩
+
+/-- The high-point relaxation is a relaxation [Schmidt 2024, p. 42]: its optimal value is a lower
+bound for the optimal value of the joint problem (5.5). -/
+theorem iInf_highPointFeasible_le :
+    ⨅ p ∈ highPointFeasible K Ω, (f p : EReal) ≤ ⨅ p ∈ bilevelFeasible φ K Ω, (f p : EReal) :=
+  biInf_mono bilevelFeasible_subset_highPointFeasible
+
+/-- A solution of the high-point relaxation that is bilevel feasible is a global optimistic
+solution. -/
+theorem isOptimisticSolution_of_isMinOn_highPointFeasible
+    (hy : y₀ ∈ solutionMap φ K x₀) (hmin : IsMinOn f (highPointFeasible K Ω) (x₀, y₀))
+    (hx : x₀ ∈ Ω) : IsOptimisticSolution f φ K Ω x₀ y₀ :=
+  isOptimisticSolution_iff.2 ⟨⟨hx, hy⟩, hmin.on_subset bilevelFeasible_subset_highPointFeasible⟩
 
 /-! ### The value function reformulation (5.36) -/
 
@@ -354,6 +468,106 @@ theorem not_isPessimisticSolution_example (x₀ y₀ : ℝ) :
     have := EReal.coe_le_coe_iff.1 (h1.trans (h2.trans h3))
     simp only [f] at this
     nlinarith
+
+/-- The position of a coupling constraint matters [Dempe 2002, Example on pp. 135–136]: for
+`min {y² + x | x + y ≥ 0, y ∈ Argmin_y {y | y ≥ 0}}`, with the coupling constraint `x + y ≥ 0` in
+the upper level, `(0, 0)` is a global solution. -/
+theorem isMinOn_coupling_upper_example :
+    ((0 : ℝ), (0 : ℝ)) ∈ bilevelFeasible (fun p : ℝ × ℝ ↦ p.2) (fun _ ↦ Ici 0) univ ∩
+        {p | 0 ≤ p.1 + p.2} ∧
+      IsMinOn (fun p : ℝ × ℝ ↦ p.2 ^ 2 + p.1)
+        (bilevelFeasible (fun p : ℝ × ℝ ↦ p.2) (fun _ ↦ Ici 0) univ ∩ {p | 0 ≤ p.1 + p.2})
+        (0, 0) := by
+  refine ⟨⟨⟨mem_univ _, mem_Ici.2 le_rfl, fun z hz ↦ hz⟩, by simp⟩, isMinOn_iff.2 ?_⟩
+  rintro ⟨x, y⟩ ⟨⟨-, hy0, hmin⟩, hc⟩
+  have hy0' : (0 : ℝ) ≤ y := hy0
+  have h1 : y ≤ 0 := hmin 0 (mem_Ici.2 le_rfl)
+  have hc' : 0 ≤ x + y := hc
+  simp only
+  nlinarith
+
+/-- With the constraint `x + y ≥ 0` of `isMinOn_coupling_upper_example` shifted into the lower
+level, the global solution is `(-1/2, 1/2)` [Dempe 2002, Example on pp. 135–136]. -/
+theorem isMinOn_coupling_lower_example :
+    ((-1 / 2 : ℝ), (1 / 2 : ℝ)) ∈ bilevelFeasible (fun p : ℝ × ℝ ↦ p.2)
+        (fun x ↦ {y | 0 ≤ y ∧ 0 ≤ x + y}) univ ∧
+      IsMinOn (fun p : ℝ × ℝ ↦ p.2 ^ 2 + p.1)
+        (bilevelFeasible (fun p : ℝ × ℝ ↦ p.2) (fun x ↦ {y | 0 ≤ y ∧ 0 ≤ x + y}) univ)
+        (-1 / 2, 1 / 2) := by
+  refine ⟨⟨mem_univ _, ⟨by norm_num, by norm_num⟩, fun z hz ↦ ?_⟩, isMinOn_iff.2 ?_⟩
+  · have hz2 : (0 : ℝ) ≤ -1 / 2 + z := hz.2
+    simp only
+    linarith
+  · rintro ⟨x, y⟩ ⟨-, ⟨-, hc⟩, -⟩
+    have hc' : 0 ≤ x + y := hc
+    simp only
+    nlinarith [sq_nonneg (y - 1 / 2)]
+
+/-- With the lower-level constraint `y ≥ 0` of `isMinOn_coupling_upper_example` shifted into the
+upper level, the follower's problem has no solution and the bilevel problem is infeasible
+[Dempe 2002, Example on pp. 135–136]. -/
+theorem coupling_infeasible_example :
+    bilevelFeasible (fun p : ℝ × ℝ ↦ p.2) (fun _ ↦ univ) univ ∩ {p | 0 ≤ p.2 ∧ 0 ≤ p.1 + p.2} =
+      ∅ := by
+  refine eq_empty_iff_forall_notMem.2 ?_
+  rintro ⟨x, y⟩ ⟨⟨-, -, hmin⟩, -⟩
+  have h : y ≤ y - 1 := hmin (y - 1) (mem_univ _)
+  linarith
+
+/-- The follower's objective `y²/2 + 500 y - 50 x y` and the leader's objective
+`(y - 1)² + (x - 1)²` of the second Example on p. 136 of [Dempe 2002]. -/
+private noncomputable def exφB : ℝ × ℝ → ℝ := fun p ↦ p.2 ^ 2 / 2 + 500 * p.2 - 50 * p.1 * p.2
+
+private def exfB : ℝ × ℝ → ℝ := fun p ↦ (p.2 - 1) ^ 2 + (p.1 - 1) ^ 2
+
+/-- Second Example on p. 136 of [Dempe 2002]: for
+`min {(y - 1)² + (x - 1)² | y ∈ Argmin_y {y²/2 + 500 y - 50 x y}}` the global solution is
+`(x, y) = (25051/2501, 2050/2501) ≈ (10.02, 0.82)`. -/
+theorem isMinOn_inactive_example :
+    ((25051 / 2501 : ℝ), (2050 / 2501 : ℝ)) ∈ bilevelFeasible exφB (fun _ ↦ univ) univ ∧
+      IsMinOn exfB (bilevelFeasible exφB (fun _ ↦ univ) univ) (25051 / 2501, 2050 / 2501) := by
+  refine ⟨⟨mem_univ _, mem_univ _, fun z _ ↦ ?_⟩, isMinOn_iff.2 ?_⟩
+  · simp only [exφB]
+    nlinarith [sq_nonneg (z - 2050 / 2501)]
+  · rintro ⟨x, y⟩ ⟨-, -, hmin⟩
+    have h := hmin (50 * x - 500) (mem_univ _)
+    simp only [exφB] at h
+    have h2 : (y - (50 * x - 500)) ^ 2 ≤ 0 := by nlinarith
+    have hy : y = 50 * x - 500 := by
+      have := pow_eq_zero_iff (two_ne_zero) |>.1 (le_antisymm h2 (sq_nonneg _))
+      linarith
+    simp only [exfB, hy]
+    nlinarith [sq_nonneg (x - 25051 / 2501)]
+
+/-- The solution depends on inactive lower-level constraints [Dempe 2002, second Example on
+p. 136]: after adding the constraint `y ≥ 0` to the follower's problem of
+`isMinOn_inactive_example`, its solution `(25051/2501, 2050/2501)` is still feasible and the new
+constraint is inactive there, but the global solution is now `(1, 0)`, with a smaller objective
+value. -/
+theorem isMinOn_inactive_constrained_example :
+    ((25051 / 2501 : ℝ), (2050 / 2501 : ℝ)) ∈ bilevelFeasible exφB (fun _ ↦ Ici 0) univ ∧
+      ((1 : ℝ), (0 : ℝ)) ∈ bilevelFeasible exφB (fun _ ↦ Ici 0) univ ∧
+      IsMinOn exfB (bilevelFeasible exφB (fun _ ↦ Ici 0) univ) (1, 0) ∧
+      exfB (1, 0) < exfB (25051 / 2501, 2050 / 2501) := by
+  refine ⟨⟨mem_univ _, mem_Ici.2 (by norm_num), fun z _ ↦ ?_⟩,
+    ⟨mem_univ _, mem_Ici.2 le_rfl, fun z hz ↦ ?_⟩, isMinOn_iff.2 ?_, by norm_num [exfB]⟩
+  · simp only [exφB]
+    nlinarith [sq_nonneg (z - 2050 / 2501)]
+  · have hz0 : (0 : ℝ) ≤ z := hz
+    simp only [exφB]
+    nlinarith [sq_nonneg z]
+  · rintro ⟨x, y⟩ ⟨-, hy0, hmin⟩
+    have hy0' : (0 : ℝ) ≤ y := hy0
+    have h := hmin 0 (mem_Ici.2 le_rfl)
+    simp only [exφB] at h
+    simp only [exfB]
+    rcases eq_or_lt_of_le hy0' with hy | hy
+    · rw [← hy]
+      nlinarith [sq_nonneg (x - 1)]
+    · have hx : 10 ≤ x := by
+        by_contra hlt
+        nlinarith [mul_pos hy (sub_pos.2 (not_le.1 hlt))]
+      nlinarith [sq_nonneg (y - 1)]
 
 end Examples
 
