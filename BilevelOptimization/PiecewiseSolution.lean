@@ -279,16 +279,15 @@ theorem lowerSelection_apply_self (x₀ : E) (y₀ : F) (lam₀ : ι → ℝ) (I
   · exact h.1.implicitFunction_apply_self one_ne_zero h.2
   · rfl
 
-/-- Near `x̄`, every local solution `y(x)` near `ȳ`, together with its multiplier, is the value of
-one of the selection functions of (4.19) whose index set satisfies `J(λ⁰) ⊆ I ⊆ I(x̄, ȳ)`. -/
-theorem eventually_exists_lowerSelection (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i))
+/-- Every KKT point `(y, λ)` of the follower's problem at a parameter `x` near `x̄`, with `y`
+near `ȳ`, is the value at `x` of one of the selection functions of (4.19) whose index set satisfies
+`J(λ⁰) ⊆ I ⊆ I(x̄, ȳ)`. -/
+theorem exists_pos_lowerSelection_eq (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i))
     {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ} (hkkt : IsLowerKKT φ g x₀ y₀ lam₀)
-    (hlicq : LowerLICQ g x₀ y₀) (hssoc : LowerSSOC φ g x₀ y₀) {s : E → F}
-    (hs : ContinuousAt s x₀) (hs₀ : s x₀ = y₀)
-    (hsmin : ∀ᶠ x in 𝓝 x₀, s x ∈ lowerFeasible g x ∧
-      IsLocalMinOn (fun z ↦ φ (x, z)) (lowerFeasible g x) (s x)) :
-    ∀ᶠ x in 𝓝 x₀, ∃ I : Finset ι, (∀ i, 0 < lam₀ i → i ∈ I) ∧ (∀ i ∈ I, g i (x₀, y₀) = 0) ∧
-      ∃ lam, IsLowerKKT φ g x (s x) lam ∧ lowerSelection φ g x₀ y₀ lam₀ I x = (s x, lam) := by
+    (hlicq : LowerLICQ g x₀ y₀) (hssoc : LowerSSOC φ g x₀ y₀) :
+    ∃ δ > 0, ∀ (x : E) (y : F) (lam : ι → ℝ), dist x x₀ < δ → dist y y₀ < δ →
+      IsLowerKKT φ g x y lam → ∃ I : Finset ι, (∀ i, 0 < lam₀ i → i ∈ I) ∧
+        (∀ i ∈ I, g i (x₀, y₀) = 0) ∧ lowerSelection φ g x₀ y₀ lam₀ I x = (y, lam) := by
   have hφ1 : ContDiff ℝ 1 φ := hφ.of_le (by norm_num)
   have hg1 : ∀ i, ContDiff ℝ 1 (g i) := fun i ↦ (hg i).of_le (by norm_num)
   have hpli : LowerPLI g x₀ y₀ := lowerPLI_of_lowerLICQ hkkt.1 hlicq
@@ -316,30 +315,26 @@ theorem eventually_exists_lowerSelection (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, 
       · exact Eventually.of_forall fun _ h ↦ absurd h hi
   obtain ⟨r₂, hr₂, hpos⟩ := Metric.eventually_nhds_iff.1 hpos
   -- multipliers near `λ⁰` and inactive constraints staying inactive
-  have hΛ : ∀ᶠ p : E × F in 𝓝 (x₀, y₀), LowerPLI g p.1 p.2 ∧
-      lowerMultipliers φ g p.1 p.2 ⊆ Metric.ball lam₀ (min r r₂) :=
-    (eventually_lowerPLI hg1 hpli).and (upperHemicontinuousAt_lowerMultipliers hφ1 hg1 hpli _
-      Metric.isOpen_ball fun lam hlam ↦ by
-        rw [lowerMultipliers_subsingleton_of_lowerLICQ hlicq hlam hkkt]
-        exact Metric.mem_ball_self (lt_min hr hr₂))
+  have hΛ : ∀ᶠ p : E × F in 𝓝 (x₀, y₀), lowerMultipliers φ g p.1 p.2 ⊆
+      Metric.ball lam₀ (min r r₂) :=
+    upperHemicontinuousAt_lowerMultipliers hφ1 hg1 hpli _ Metric.isOpen_ball fun lam hlam ↦ by
+      rw [lowerMultipliers_subsingleton_of_lowerLICQ hlicq hlam hkkt]
+      exact Metric.mem_ball_self (lt_min hr hr₂)
   have hinact : ∀ᶠ p : E × F in 𝓝 (x₀, y₀), ∀ i, g i (x₀, y₀) < 0 → g i p < 0 :=
     eventually_all.2 fun i ↦ by
       by_cases hi : g i (x₀, y₀) < 0
       · exact (((hg i).continuous.tendsto _).eventually (eventually_lt_nhds hi)).mono
           fun _ h _ ↦ h
       · exact Eventually.of_forall fun _ h ↦ absurd h hi
-  rw [ContinuousAt, hs₀] at hs
-  have hpair : Tendsto (fun x ↦ (x, s x)) (𝓝 x₀) (𝓝 (x₀, y₀)) := tendsto_id.prodMk_nhds hs
-  filter_upwards [hsmin, hpair.eventually hΛ, hpair.eventually hinact,
-    Metric.ball_mem_nhds x₀ hr, hs.eventually (Metric.ball_mem_nhds y₀ hr)]
-    with x hx hxΛ hxin hxr hsr
-  obtain ⟨hxG, hxmin⟩ := hx
-  obtain ⟨lam, hlam⟩ := exists_isLowerKKT_of_isLocalMinOn hxG hxmin
-    ((hφ1.comp (contDiff_prodMk_right x)).differentiable one_ne_zero (s x))
-    (fun i ↦ ((hg1 i).comp (contDiff_prodMk_right x)).contDiffAt) hxΛ.1
-  have hlε : dist lam lam₀ < min r r₂ := hxΛ.2 hlam
-  set I : Finset ι := Finset.univ.filter fun i ↦ g i (x, s x) = 0 with hI
-  have hmemI : ∀ i, i ∈ I ↔ g i (x, s x) = 0 := fun i ↦ by simp [hI]
+  obtain ⟨δ₁, hδ₁, hnear⟩ := Metric.eventually_nhds_iff.1 (hΛ.and hinact)
+  refine ⟨min r δ₁, lt_min hr hδ₁, fun x y lam hx hy hlam ↦ ?_⟩
+  have hp : dist (x, y) (x₀, y₀) < δ₁ := by
+    rw [Prod.dist_eq]
+    exact max_lt (hx.trans_le (min_le_right _ _)) (hy.trans_le (min_le_right _ _))
+  obtain ⟨hxΛ, hxin⟩ := hnear hp
+  have hlε : dist lam lam₀ < min r r₂ := hxΛ hlam
+  set I : Finset ι := Finset.univ.filter fun i ↦ g i (x, y) = 0 with hI
+  have hmemI : ∀ i, i ∈ I ↔ g i (x, y) = 0 := fun i ↦ by simp [hI]
   have hJ : ∀ i, 0 < lam₀ i → i ∈ I := fun i hi ↦ (hmemI i).2
     ((mul_eq_zero.1 (hlam.2.2.1 i)).resolve_left (hpos (hlε.trans_le (min_le_right _ _)) i hi).ne')
   have hIA : ∀ i ∈ I, g i (x₀, y₀) = 0 := fun i hi ↦ by
@@ -349,7 +344,7 @@ theorem eventually_exists_lowerSelection (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, 
     exact lt_irrefl _ this
   have hdφ : ∀ p, DifferentiableAt ℝ φ p := fun p ↦ hφ1.differentiable one_ne_zero p
   have hdg : ∀ i p, DifferentiableAt ℝ (g i) p := fun i p ↦ (hg1 i).differentiable one_ne_zero p
-  have heq : lowerKKTMap φ g I (x, (s x, lam)) = lowerKKTMap φ g I u := by
+  have heq : lowerKKTMap φ g I (x, (y, lam)) = lowerKKTMap φ g I u := by
     simp only [lowerKKTMap, u]
     rw [lowerLagrangianDeriv_eq_zero (hdφ _) (fun i ↦ hdg i _) hlam,
       lowerLagrangianDeriv_eq_zero (hdφ _) (fun i ↦ hdg i _) hkkt]
@@ -360,9 +355,35 @@ theorem eventually_exists_lowerSelection (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, 
       rw [(mul_eq_zero.1 (hlam.2.2.1 i)).resolve_right fun h ↦ hi ((hmemI i).2 h)]
       by_contra h
       exact hi (hJ i (lt_of_le_of_ne (hkkt.2.1 i) h))
-  refine ⟨I, hJ, hIA, lam, hlam, hIFT (y := (x, (s x, lam))) ?_ I ⟨hJ, hIA⟩ heq⟩
+  refine ⟨I, hJ, hIA, hIFT (y := (x, (y, lam))) ?_ I ⟨hJ, hIA⟩ heq⟩
   rw [Prod.dist_eq, Prod.dist_eq]
-  exact max_lt hxr (max_lt hsr (hlε.trans_le (min_le_left _ _)))
+  exact max_lt (hx.trans_le (min_le_left _ _))
+    (max_lt (hy.trans_le (min_le_left _ _)) (hlε.trans_le (min_le_left _ _)))
+
+/-- Near `x̄`, every local solution `y(x)` near `ȳ`, together with its multiplier, is the value of
+one of the selection functions of (4.19) whose index set satisfies `J(λ⁰) ⊆ I ⊆ I(x̄, ȳ)`. -/
+theorem eventually_exists_lowerSelection (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i))
+    {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ} (hkkt : IsLowerKKT φ g x₀ y₀ lam₀)
+    (hlicq : LowerLICQ g x₀ y₀) (hssoc : LowerSSOC φ g x₀ y₀) {s : E → F}
+    (hs : ContinuousAt s x₀) (hs₀ : s x₀ = y₀)
+    (hsmin : ∀ᶠ x in 𝓝 x₀, s x ∈ lowerFeasible g x ∧
+      IsLocalMinOn (fun z ↦ φ (x, z)) (lowerFeasible g x) (s x)) :
+    ∀ᶠ x in 𝓝 x₀, ∃ I : Finset ι, (∀ i, 0 < lam₀ i → i ∈ I) ∧ (∀ i ∈ I, g i (x₀, y₀) = 0) ∧
+      ∃ lam, IsLowerKKT φ g x (s x) lam ∧ lowerSelection φ g x₀ y₀ lam₀ I x = (s x, lam) := by
+  have hφ1 : ContDiff ℝ 1 φ := hφ.of_le (by norm_num)
+  have hg1 : ∀ i, ContDiff ℝ 1 (g i) := fun i ↦ (hg i).of_le (by norm_num)
+  have hpli : LowerPLI g x₀ y₀ := lowerPLI_of_lowerLICQ hkkt.1 hlicq
+  obtain ⟨δ, hδ, hsel⟩ := exists_pos_lowerSelection_eq hφ hg hkkt hlicq hssoc
+  rw [ContinuousAt, hs₀] at hs
+  have hpair : Tendsto (fun x ↦ (x, s x)) (𝓝 x₀) (𝓝 (x₀, y₀)) := tendsto_id.prodMk_nhds hs
+  filter_upwards [hsmin, hpair.eventually (eventually_lowerPLI hg1 hpli),
+    Metric.ball_mem_nhds x₀ hδ, hs.eventually (Metric.ball_mem_nhds y₀ hδ)]
+    with x hx hxP hxδ hsδ
+  obtain ⟨lam, hlam⟩ := exists_isLowerKKT_of_isLocalMinOn hx.1 hx.2
+    ((hφ1.comp (contDiff_prodMk_right x)).differentiable one_ne_zero (s x))
+    (fun i ↦ ((hg1 i).comp (contDiff_prodMk_right x)).contDiffAt) hxP
+  obtain ⟨I, hJ, hIA, he⟩ := hsel x (s x) lam hxδ hsδ hlam
+  exact ⟨I, hJ, hIA, lam, hlam, he⟩
 
 /-- **Thm. 4.10 of [Dempe 2002]** (Ralph–Dempe) under (LICQ): a continuous local solution
 function `y(·)` through a KKT point `ȳ` with (LICQ) and (SSOC) is `PC¹` at `x̄`, with the local
