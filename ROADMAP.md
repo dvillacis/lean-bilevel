@@ -33,10 +33,10 @@ In `LinearGeometry.lean`, for the LP–LP model `LinearBilevel` (follower `min_y
 | D Def 3.1 | polyhedral point-to-set maps | ✓ | `IsConvexPolyhedral`, `IsPolyhedralMap` | |
 | D Thm 3.1 | `Ψ_L` is polyhedral | ✓ | `LinearBilevel.graph_lowerSolution_eq`, `LinearBilevel.isPolyhedralMap_lowerSolution`, `LinearBilevel.feasible_eq`, `LinearBilevel.isClosed_feasible` | union of faces whose active set supports a dual feasible multiplier |
 | D Cor 3.1 | a solution at a vertex | ✓ | `LinearBilevel.exists_isMinOn_feasible_mem_extremePoints` | uniqueness of the follower's solution not needed (optimistic case); constraint set assumed bounded; upper-level constraints may depend on `y` |
-| D Thm 3.2 | existence under uniqueness, problem (3.4) | ☐ | | follower's objective depends on the leader; not an instance of `LinearBilevel` |
+| D Thm 3.2 | existence under uniqueness, problem (3.4) | ✓ | `ParamLinearBilevel`, `ParamLinearBilevel.graph_lowerSolution_eq`, `ParamLinearBilevel.isClosed_feasible`, `ParamLinearBilevel.exists_isMinOn_feasible` | whole constraint set bounded instead of only `M̄` compact; uniqueness not needed (closed cones `isClosed_supportedCone` instead of continuity of the solution function) |
 | D Thm 3.3 | existence of optimistic solutions | ✓ | `LinearBilevel.exists_isMinOn_feasible` | |
 | D Ex. pp. 38–39 | pessimistic problem without solution | ✓ | `not_exists_isPessimisticSolution_linear_example` | |
-| D Ex. p. 33 | disconnected feasible set | ☐ | | |
+| D Ex. p. 33 | disconnected feasible set | ✓ | `not_isPreconnected_linear_example` | points with `x = 1, 4` feasible, none with `x = 2` |
 | D Thm 3.4–3.5 | relations to multicriteria optimization | ☐ | | |
 | D Sect. 3.4.2 | 0-1 (big-M) reformulation | ✓ | see S p. 133 below | |
 | D Thm 3.6–3.7 | F. John / KKT conditions | ☐ | | compare the general D Thm 5.16–5.17 |
