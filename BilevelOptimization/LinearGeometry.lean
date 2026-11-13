@@ -1,0 +1,467 @@
+/-
+Copyright (c) 2026 David Villacís. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Author: David Villacís
+-/
+import BilevelOptimization.LinearBilevel
+import Mathlib.Analysis.Convex.KreinMilman
+
+/-!
+# The geometry of linear bilevel problems
+
+Ch. 3 of [Dempe 2002] for the LP–LP bilevel problem `LinearBilevel` of
+`BilevelOptimization.LinearBilevel`: the solution map of the follower's problem is polyhedral, the
+optimistic problem has a solution whenever its feasible set is nonempty and the constraint set is
+bounded, and a solution is attained at a vertex of the constraint set.
+
+## Main results
+
+* `LinearBilevel.graph_lowerSolution_eq`, `LinearBilevel.isPolyhedralMap_lowerSolution`:
+  Thm. 3.1 of [Dempe 2002]: the graph of `Ψ` is the union of the faces
+  `{(x, y) | C x + D y ≥ b, Cᵢ x + Dᵢ y = bᵢ (i ∈ I)}` of the follower's constraint set, over the
+  index sets `I` supporting a dual feasible `λ`; hence `Ψ` is polyhedral (Def. 3.1).
+* `LinearBilevel.feasible_eq`, `LinearBilevel.isClosed_feasible`: the bilevel feasible set is a
+  finite union of faces of the constraint set, and it is closed.
+* `LinearBilevel.exists_isMinOn_feasible`: Thm. 3.3 of [Dempe 2002]: existence of (optimistic)
+  solutions.
+* `LinearBilevel.exists_isMinOn_feasible_mem_extremePoints`: Cor. 3.1 of [Dempe 2002]: a
+  solution is attained at a vertex of the constraint set
+  `{(x, y) | A x + B y ≥ a, C x + D y ≥ b}`.
+* `LinearBilevel.isMinOn_feasible_iff_forall_gap_pos`: Thm. 3.11 of [Dempe 2002]: `p` is a
+  global solution iff the duality gap of the follower's problem is positive at all primal–dual
+  feasible points with a smaller value of the leader's objective.
+* `isMinOn_linear_example`: the Example on p. 30 of [Dempe 2002].
+* `not_exists_isPessimisticSolution_linear_example`: the Example on pp. 38–39 of [Dempe 2002]:
+  a linear pessimistic problem without solution.
+
+## Remarks on the sources
+
+* The leader's variable is `x` and the follower's is `y` (the book uses the opposite letters),
+  and the follower's problem is `min_y {d y | C x + D y ≥ b}` instead of (3.1); sign constraints
+  are part of `C x + D y ≥ b`.
+* Cor. 3.1 assumes that the follower's solution is unique for every parameter. This is not
+  needed in the optimistic formulation; instead the constraint set is assumed to be bounded, so
+  that a solution exists and the faces have vertices (in the book the sign constraints provide
+  the vertices, and the existence of a solution is implicit). Upper-level constraints may
+  depend on `y`.
+* In Thm. 3.3 the set `M` is the constraint set `{(x, y) | A x + B y ≥ a, C x + D y ≥ b}`.
+* Thm. 3.11 is stated in the book with the optimal value `φ(h)` of the nonconvex quadratic
+  problem (3.23), which is attained by [Dempe 2002, ref. 164]. Here it is stated pointwise:
+  the objective of (3.23) is positive at every feasible point of (3.23) with `h < h̄`; this
+  avoids the attainment result.
+* Thm. 3.2 and the Example on pp. 38–39 use the follower's problem (3.4), whose objective
+  depends on the leader's variable; this is not an instance of `LinearBilevel`, and the example
+  is stated with the general definitions of `BilevelOptimization.Basic`.
+-/
+
+open Filter Topology Set
+
+namespace Bilevel
+
+/-! ### Convex polyhedral sets and polyhedral maps -/
+
+section Polyhedral
+
+variable {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
+
+/-- A convex polyhedral set: the intersection of finitely many closed halfspaces
+[Dempe 2002, p. 32]. -/
+def IsConvexPolyhedral (S : Set X) : Prop :=
+  ∃ s : Finset (StrongDual ℝ X × ℝ), S = {p | ∀ q ∈ s, q.1 p ≤ q.2}
+
+theorem IsConvexPolyhedral.isClosed {S : Set X} (h : IsConvexPolyhedral S) : IsClosed S := by
+  obtain ⟨s, rfl⟩ := h
+  simp only [ofPred_forall]
+  exact isClosed_biInter fun q _ ↦ isClosed_le q.1.continuous continuous_const
+
+theorem IsConvexPolyhedral.convex {S : Set X} (h : IsConvexPolyhedral S) : Convex ℝ S := by
+  obtain ⟨s, rfl⟩ := h
+  simp only [ofPred_forall]
+  exact convex_iInter₂ fun q _ ↦ convex_halfSpace_le q.1.toLinearMap.isLinear q.2
+
+/-- A polyhedral set-valued map [Dempe 2002, Def. 3.1]: its graph is the union of finitely many
+convex polyhedral sets. -/
+def IsPolyhedralMap {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [NormedAddCommGroup F] [NormedSpace ℝ F] (Γ : E → Set F) : Prop :=
+  ∃ 𝒮 : Set (Set (E × F)), 𝒮.Finite ∧ (∀ S ∈ 𝒮, IsConvexPolyhedral S) ∧
+    {p : E × F | p.2 ∈ Γ p.1} = ⋃₀ 𝒮
+
+/-- If the functionals `lⱼ` are bounded below by `cⱼ` on `A`, then the points of `A` where
+`lⱼ = cⱼ` for all `j ∈ I` form an extreme subset (a face) of `A`. -/
+theorem isExtreme_ofPred_forall_eq {J : Type*} {A : Set X} (l : J → StrongDual ℝ X) (c : J → ℝ)
+    (I : Set J) (h : ∀ p ∈ A, ∀ j ∈ I, c j ≤ l j p) :
+    IsExtreme ℝ A {p | p ∈ A ∧ ∀ j ∈ I, l j p = c j} := by
+  refine ⟨fun p hp ↦ hp.1, fun x₁ h₁ x₂ h₂ z hz hseg ↦ ⟨h₁, fun j hj ↦ ?_⟩⟩
+  obtain ⟨a, b, ha, hb, hab, rfl⟩ := hseg
+  have e := hz.2 j hj
+  rw [map_add, map_smul, map_smul, smul_eq_mul, smul_eq_mul] at e
+  have h1 : 0 ≤ a * (l j x₁ - c j) := mul_nonneg ha.le (sub_nonneg.2 (h x₁ h₁ j hj))
+  have h2 : 0 ≤ b * (l j x₂ - c j) := mul_nonneg hb.le (sub_nonneg.2 (h x₂ h₂ j hj))
+  have h3 : a * (l j x₁ - c j) + b * (l j x₂ - c j) = 0 := by linear_combination e - c j * hab
+  have h4 : a * (l j x₁ - c j) = 0 := by linarith
+  linarith [(mul_eq_zero.1 h4).resolve_left ha.ne']
+
+theorem isClosed_ofPred_forall_eq {J : Type*} {A : Set X} (hA : IsClosed A)
+    (l : J → StrongDual ℝ X) (c : J → ℝ) (I : Set J) :
+    IsClosed {p | p ∈ A ∧ ∀ j ∈ I, l j p = c j} := by
+  have e : {p | p ∈ A ∧ ∀ j ∈ I, l j p = c j} = A ∩ ⋂ j ∈ I, {p | l j p = c j} := by
+    ext p
+    simp only [mem_ofPred_eq, mem_inter_iff, mem_iInter]
+  rw [e]
+  exact hA.inter (isClosed_biInter fun j _ ↦ isClosed_eq (l j).continuous continuous_const)
+
+end Polyhedral
+
+namespace LinearBilevel
+
+variable {E F κ ι : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
+  [NormedSpace ℝ F] (P : LinearBilevel E F κ ι)
+
+/-- The linear part `(x, y) ↦ Cᵢ x + Dᵢ y` of the `i`-th follower constraint. -/
+def slackFunctional (i : ι) : StrongDual ℝ (E × F) :=
+  (P.C i).comp (ContinuousLinearMap.fst ℝ E F) + (P.D i).comp (ContinuousLinearMap.snd ℝ E F)
+
+/-- The leader's objective as a functional. -/
+def objectiveFunctional : StrongDual ℝ (E × F) :=
+  P.cx.comp (ContinuousLinearMap.fst ℝ E F) + P.cy.comp (ContinuousLinearMap.snd ℝ E F)
+
+theorem slack_eq (i : ι) (p : E × F) : P.slack i p = P.slackFunctional i p - P.b i := rfl
+
+theorem objective_eq (p : E × F) : P.objective p = P.objectiveFunctional p := rfl
+
+/-- The constraint set `{(x, y) | A x + B y ≥ a, C x + D y ≥ b}` of the linear bilevel problem
+(the set `M` of [Dempe 2002, Thm. 3.3]). -/
+def constraintSet : Set (E × F) := {p | p ∈ P.upperFeasible ∧ p.2 ∈ P.lowerFeasible p.1}
+
+/-- The face `{(x, y) | C x + D y ≥ b, Cᵢ x + Dᵢ y = bᵢ (i ∈ I)}` of the follower's constraint
+set. -/
+def activeFace (I : Set ι) : Set (E × F) :=
+  {p | (∀ i, 0 ≤ P.slack i p) ∧ ∀ i ∈ I, P.slack i p = 0}
+
+/-- The index set `I` supports a dual feasible multiplier: `Dᵀ λ = d`, `λ ≥ 0`, `λᵢ = 0` for
+`i ∉ I`. -/
+def IsDualSupport [Fintype ι] (I : Set ι) : Prop :=
+  ∃ lam, P.IsDualFeasible lam ∧ ∀ i, i ∉ I → lam i = 0
+
+theorem isClosed_upperFeasible : IsClosed P.upperFeasible := by
+  simp only [upperFeasible, ofPred_forall]
+  exact isClosed_iInter fun k ↦ isClosed_le continuous_const
+    (((P.A k).continuous.comp continuous_fst).add ((P.B k).continuous.comp continuous_snd))
+
+theorem continuous_objective : Continuous P.objective :=
+  P.objectiveFunctional.continuous
+
+/-- The faces of the follower's constraint set are convex polyhedral sets. -/
+theorem isConvexPolyhedral_activeFace [Fintype ι] (I : Set ι) :
+    IsConvexPolyhedral (P.activeFace I) := by
+  classical
+  refine ⟨(Finset.univ.image fun i ↦ (-P.slackFunctional i, -P.b i)) ∪
+    ((Finset.univ.filter (· ∈ I)).image fun i ↦ (P.slackFunctional i, P.b i)), ?_⟩
+  ext p
+  constructor
+  · rintro ⟨h0, hI⟩ q hq
+    rcases Finset.mem_union.1 hq with h | h
+    · obtain ⟨i, -, rfl⟩ := Finset.mem_image.1 h
+      have := h0 i
+      rw [slack_eq] at this
+      show (-P.slackFunctional i) p ≤ -P.b i
+      rw [neg_apply]
+      linarith
+    · obtain ⟨i, hi, rfl⟩ := Finset.mem_image.1 h
+      have := hI i (Finset.mem_filter.1 hi).2
+      rw [slack_eq] at this
+      show P.slackFunctional i p ≤ P.b i
+      linarith
+  · intro h
+    have h1 : ∀ i, (-P.slackFunctional i) p ≤ -P.b i := fun i ↦
+      h _ (Finset.mem_union_left _ (Finset.mem_image_of_mem _ (Finset.mem_univ i)))
+    refine ⟨fun i ↦ ?_, fun i hi ↦ ?_⟩
+    · have := h1 i
+      rw [neg_apply] at this
+      rw [slack_eq]
+      linarith
+    · have h2 : P.slackFunctional i p ≤ P.b i :=
+        h _ (Finset.mem_union_right _ (Finset.mem_image_of_mem _
+          (Finset.mem_filter.2 ⟨Finset.mem_univ i, hi⟩)))
+      have := h1 i
+      rw [neg_apply] at this
+      rw [slack_eq]
+      linarith
+
+theorem activeFace_inter_subset_constraintSet (I : Set ι) :
+    P.activeFace I ∩ P.upperFeasible ⊆ P.constraintSet :=
+  fun _ hp ↦ ⟨hp.2, mem_lowerFeasible_iff.2 hp.1.1⟩
+
+theorem isClosed_constraintSet [Fintype ι] : IsClosed P.constraintSet := by
+  have e : P.constraintSet = P.upperFeasible ∩ P.activeFace ∅ := by
+    ext p
+    exact ⟨fun h ↦ ⟨h.1, mem_lowerFeasible_iff.1 h.2, fun _ h ↦ h.elim⟩,
+      fun h ↦ ⟨h.1, mem_lowerFeasible_iff.2 h.2.1⟩⟩
+  rw [e]
+  exact P.isClosed_upperFeasible.inter (P.isConvexPolyhedral_activeFace ∅).isClosed
+
+variable [Fintype ι]
+
+/-- Thm. 3.1 of [Dempe 2002]: the graph of the solution map `Ψ` of the follower's LP is the
+union of the faces of the follower's constraint set whose active index set supports a dual
+feasible multiplier. -/
+theorem graph_lowerSolution_eq [FiniteDimensional ℝ F] :
+    {p : E × F | p.2 ∈ P.lowerSolution p.1} =
+      ⋃ I ∈ {I | P.IsDualSupport I}, P.activeFace I := by
+  ext ⟨x, y⟩
+  constructor
+  · intro h
+    obtain ⟨hy, lam, hlam, hc⟩ := mem_lowerSolution_iff.1 h
+    exact mem_iUnion₂.2 ⟨{i | lam i ≠ 0}, ⟨lam, hlam, fun i hi ↦ not_not.1 hi⟩,
+      mem_lowerFeasible_iff.1 hy, fun i hi ↦ (mul_eq_zero.1 (hc i)).resolve_left hi⟩
+  · intro h
+    obtain ⟨I, ⟨lam, hlam, hsupp⟩, h0, hI⟩ := mem_iUnion₂.1 h
+    refine mem_lowerSolution_iff.2 ⟨mem_lowerFeasible_iff.2 h0, lam, hlam, fun i ↦ ?_⟩
+    by_cases hi : i ∈ I
+    · rw [hI i hi, mul_zero]
+    · rw [hsupp i hi, zero_mul]
+
+/-- Thm. 3.1 of [Dempe 2002]: the solution map of the follower's LP is polyhedral. -/
+theorem isPolyhedralMap_lowerSolution [FiniteDimensional ℝ F] :
+    IsPolyhedralMap P.lowerSolution :=
+  ⟨P.activeFace '' {I | P.IsDualSupport I}, (Set.toFinite _).image _,
+    by rintro _ ⟨I, -, rfl⟩; exact P.isConvexPolyhedral_activeFace I,
+    by rw [graph_lowerSolution_eq, sUnion_image]⟩
+
+/-- The bilevel feasible set is a finite union of faces of the constraint set. -/
+theorem feasible_eq [FiniteDimensional ℝ F] :
+    P.feasible = ⋃ I ∈ {I | P.IsDualSupport I}, (P.activeFace I ∩ P.upperFeasible) := by
+  ext p
+  have h : p.2 ∈ P.lowerSolution p.1 ↔ p ∈ ⋃ I ∈ {I | P.IsDualSupport I}, P.activeFace I := by
+    rw [← P.graph_lowerSolution_eq]
+    rfl
+  constructor
+  · rintro ⟨hu, hs⟩
+    obtain ⟨I, hI, hp⟩ := mem_iUnion₂.1 (h.1 hs)
+    exact mem_iUnion₂.2 ⟨I, hI, hp, hu⟩
+  · intro hp
+    obtain ⟨I, hI, hp, hu⟩ := mem_iUnion₂.1 hp
+    exact ⟨hu, h.2 (mem_iUnion₂.2 ⟨I, hI, hp⟩)⟩
+
+theorem feasible_subset_constraintSet [FiniteDimensional ℝ F] :
+    P.feasible ⊆ P.constraintSet := by
+  rw [feasible_eq]
+  exact iUnion₂_subset fun I _ ↦ P.activeFace_inter_subset_constraintSet I
+
+/-- The feasible set of a linear bilevel problem is closed. -/
+theorem isClosed_feasible [FiniteDimensional ℝ F] : IsClosed P.feasible := by
+  rw [feasible_eq]
+  exact (Set.toFinite _).isClosed_biUnion fun I _ ↦
+    (P.isConvexPolyhedral_activeFace I).isClosed.inter P.isClosed_upperFeasible
+
+/-- Thm. 3.3 of [Dempe 2002]: if the constraint set `{(x, y) | A x + B y ≥ a, C x + D y ≥ b}` is
+bounded and the linear bilevel problem is feasible, then it has a global (optimistic)
+solution. -/
+theorem exists_isMinOn_feasible [FiniteDimensional ℝ E] [FiniteDimensional ℝ F]
+    (hb : Bornology.IsBounded P.constraintSet) (hne : P.feasible.Nonempty) :
+    ∃ p ∈ P.feasible, IsMinOn P.objective P.feasible p :=
+  (Metric.isCompact_of_isClosed_isBounded P.isClosed_feasible
+    (hb.subset P.feasible_subset_constraintSet)).exists_isMinOn hne
+      P.continuous_objective.continuousOn
+
+/-- Cor. 3.1 of [Dempe 2002]: if the constraint set is bounded and the linear bilevel problem is
+feasible, then a global (optimistic) solution is attained at a vertex of the constraint set
+`{(x, y) | A x + B y ≥ a, C x + D y ≥ b}`. -/
+theorem exists_isMinOn_feasible_mem_extremePoints [FiniteDimensional ℝ E]
+    [FiniteDimensional ℝ F] (hb : Bornology.IsBounded P.constraintSet)
+    (hne : P.feasible.Nonempty) :
+    ∃ p ∈ P.feasible, p ∈ P.constraintSet.extremePoints ℝ ∧
+      IsMinOn P.objective P.feasible p := by
+  obtain ⟨p₀, hp₀, hmin⟩ := P.exists_isMinOn_feasible hb hne
+  have hp₀' := hp₀
+  rw [feasible_eq] at hp₀'
+  obtain ⟨I, hI, hpI, hpu⟩ := mem_iUnion₂.1 hp₀'
+  -- the face `Q` of the constraint set containing `p₀`
+  set Q : Set (E × F) :=
+    {p | p ∈ P.constraintSet ∧ ∀ i ∈ I, P.slackFunctional i p = P.b i} with hQ
+  have hQM : IsExtreme ℝ P.constraintSet Q :=
+    isExtreme_ofPred_forall_eq P.slackFunctional P.b I fun p hp i _ ↦ by
+      have := mem_lowerFeasible_iff.1 hp.2 i
+      rw [slack_eq] at this
+      linarith
+  have hQf : Q ⊆ P.feasible := fun p hp ↦ by
+    rw [feasible_eq]
+    exact mem_iUnion₂.2 ⟨I, hI, ⟨mem_lowerFeasible_iff.1 hp.1.2, fun i hi ↦ by
+      rw [slack_eq, hp.2 i hi, sub_self]⟩, hp.1.1⟩
+  have hp₀Q : p₀ ∈ Q := ⟨⟨hpu, mem_lowerFeasible_iff.2 hpI.1⟩, fun i hi ↦ by
+    have := hpI.2 i hi
+    rw [slack_eq] at this
+    linarith⟩
+  -- the face `S` of `Q` where the leader's objective is minimal
+  set S : Set (E × F) := {p | p ∈ Q ∧ ∀ j ∈ (univ : Set Unit),
+    (fun _ : Unit ↦ P.objectiveFunctional) j p = (fun _ : Unit ↦ P.objective p₀) j} with hS
+  have hQS : IsExtreme ℝ Q S :=
+    isExtreme_ofPred_forall_eq (fun _ : Unit ↦ P.objectiveFunctional) (fun _ ↦ P.objective p₀)
+      univ fun p hp _ _ ↦ isMinOn_iff.1 hmin p (hQf hp)
+  have hSc : IsCompact S :=
+    Metric.isCompact_of_isClosed_isBounded
+      (isClosed_ofPred_forall_eq (isClosed_ofPred_forall_eq P.isClosed_constraintSet _ _ _) _ _ _)
+      (hb.subset fun p hp ↦ hp.1.1)
+  obtain ⟨p, hp⟩ := hSc.extremePoints_nonempty ⟨p₀, hp₀Q, fun _ _ ↦ rfl⟩
+  have hpS : p ∈ S := extremePoints_subset hp
+  have e : P.objective p = P.objective p₀ := hpS.2 () (mem_univ _)
+  refine ⟨p, hQf hpS.1, hQM.extremePoints_subset_extremePoints
+    (hQS.extremePoints_subset_extremePoints hp), isMinOn_iff.2 fun q hq ↦ ?_⟩
+  rw [e]
+  exact isMinOn_iff.1 hmin q hq
+
+/-- Thm. 3.11 of [Dempe 2002]: `p` is a global (optimistic) solution of the linear bilevel
+problem iff the duality gap `d y - (b - C x)ᵀ λ` of the follower's problem is positive at every
+primal–dual feasible point `(x, y, λ)` satisfying the leader's constraints with a smaller value
+of the leader's objective. -/
+theorem isMinOn_feasible_iff_forall_gap_pos [FiniteDimensional ℝ F] {p : E × F} :
+    IsMinOn P.objective P.feasible p ↔
+      ∀ q : (E × F) × (ι → ℝ), q.1 ∈ P.upperFeasible → q.1.2 ∈ P.lowerFeasible q.1.1 →
+        P.IsDualFeasible q.2 → P.objective q.1 < P.objective p →
+        0 < P.d q.1.2 - ∑ i, q.2 i * (P.b i - P.C i q.1.1) := by
+  constructor
+  · intro hmin q hu hy hlam hlt
+    by_contra hgap
+    have hq : q ∈ P.sdFeasible := ⟨hu, hy, hlam, by linarith [not_lt.1 hgap]⟩
+    have hf : q.1 ∈ P.feasible := by
+      rw [← P.image_fst_sdFeasible]
+      exact ⟨q, hq, rfl⟩
+    exact absurd (isMinOn_iff.1 hmin q.1 hf) (not_le.2 hlt)
+  · intro h
+    refine isMinOn_iff.2 fun p' hp' ↦ ?_
+    by_contra hlt
+    obtain ⟨hy, lam, hlam, hc⟩ := mem_lowerSolution_iff.1 hp'.2
+    have h1 := h (p', lam) hp'.1 hy hlam (not_le.1 hlt)
+    have h2 := (complementarity_iff_le hy hlam).1 hc
+    linarith
+
+end LinearBilevel
+
+/-! ### Examples -/
+
+/-- The Example on p. 30 of [Dempe 2002] (Fig. 3.1): for
+`min {3 y + x | 1 ≤ x ≤ 6, y ∈ Argmin_y {-y | y + x ≤ 8, 4 y + x ≥ 8, 2 y + x ≤ 13}}`
+the global solution is `(x, y) = (6, 2)`, with optimal value `12`. -/
+theorem isMinOn_linear_example :
+    ((6 : ℝ), (2 : ℝ)) ∈ bilevelFeasible (fun p : ℝ × ℝ ↦ -p.2)
+        (fun x ↦ {y | y + x ≤ 8 ∧ 8 ≤ 4 * y + x ∧ 2 * y + x ≤ 13}) (Icc 1 6) ∧
+      IsMinOn (fun p : ℝ × ℝ ↦ 3 * p.2 + p.1) (bilevelFeasible (fun p : ℝ × ℝ ↦ -p.2)
+        (fun x ↦ {y | y + x ≤ 8 ∧ 8 ≤ 4 * y + x ∧ 2 * y + x ≤ 13}) (Icc 1 6)) (6, 2) := by
+  refine ⟨⟨⟨by norm_num, by norm_num⟩, ⟨by norm_num, by norm_num, by norm_num⟩, fun z hz ↦ ?_⟩,
+    isMinOn_iff.2 ?_⟩
+  · have h1 : z + 6 ≤ 8 := hz.1
+    show -(2 : ℝ) ≤ -z
+    linarith
+  · rintro ⟨x, y⟩ ⟨hx, -, hmin⟩
+    have hx1 : (1 : ℝ) ≤ x := hx.1
+    have hx6 : x ≤ 6 := hx.2
+    have key : ∀ z : ℝ, z + x ≤ 8 → 8 ≤ 4 * z + x → 2 * z + x ≤ 13 → z ≤ y := fun z a b c ↦
+      neg_le_neg_iff.1 (hmin z ⟨a, b, c⟩)
+    show 3 * (2 : ℝ) + 6 ≤ 3 * y + x
+    rcases le_total (8 - x) ((13 - x) / 2) with h | h
+    · have := key (8 - x) (by linarith) (by linarith) (by linarith)
+      linarith
+    · have := key ((13 - x) / 2) (by linarith) (by linarith) (by linarith)
+      linarith
+
+/-- The follower's feasible set in the Example on pp. 38–39 of [Dempe 2002]. -/
+private def pessK : Set (ℝ × ℝ) :=
+  {y | 0 ≤ y.1 ∧ 0 ≤ y.2 ∧ y.1 + y.2 ≤ 3 ∧ -y.1 + y.2 ≤ 1 ∧ y.1 - y.2 ≤ 1}
+
+/-- The follower's objective `-⟨x, y⟩` in the Example on pp. 38–39 of [Dempe 2002]. -/
+private def pessφ (p : (ℝ × ℝ) × (ℝ × ℝ)) : ℝ := -(p.1.1 * p.2.1 + p.1.2 * p.2.2)
+
+/-- The leader's objective `-y₂ - 10 x₁ - 10 x₂` in the Example on pp. 38–39 of
+[Dempe 2002]. -/
+private def pessF (p : (ℝ × ℝ) × (ℝ × ℝ)) : ℝ := -p.2.2 - 10 * p.1.1 - 10 * p.1.2
+
+private theorem pess_mem_two_one {x₁ x₂ : ℝ} (h2 : 0 ≤ x₂) (h : x₂ ≤ x₁) :
+    ((2 : ℝ), (1 : ℝ)) ∈ solutionMap pessφ (fun _ ↦ pessK) (x₁, x₂) := by
+  refine ⟨?_, ?_⟩
+  · show (0 : ℝ) ≤ 2 ∧ (0 : ℝ) ≤ 1 ∧ (2 : ℝ) + 1 ≤ 3 ∧ -(2 : ℝ) + 1 ≤ 1 ∧ (2 : ℝ) - 1 ≤ 1
+    norm_num
+  · rintro ⟨z₁, z₂⟩ ⟨a, b, c, d, e⟩
+    have a' : 0 ≤ z₁ := a
+    have c' : z₁ + z₂ ≤ 3 := c
+    have e' : z₁ - z₂ ≤ 1 := e
+    show -(x₁ * 2 + x₂ * 1) ≤ -(x₁ * z₁ + x₂ * z₂)
+    nlinarith [mul_nonneg h2 (sub_nonneg.2 c'), mul_nonneg (sub_nonneg.2 h)
+      (by linarith : (0 : ℝ) ≤ 2 - z₁)]
+
+private theorem pess_mem_one_two {x₁ x₂ : ℝ} (h1 : 0 ≤ x₁) (h : x₁ ≤ x₂) :
+    ((1 : ℝ), (2 : ℝ)) ∈ solutionMap pessφ (fun _ ↦ pessK) (x₁, x₂) := by
+  refine ⟨?_, ?_⟩
+  · show (0 : ℝ) ≤ 1 ∧ (0 : ℝ) ≤ 2 ∧ (1 : ℝ) + 2 ≤ 3 ∧ -(1 : ℝ) + 2 ≤ 1 ∧ (1 : ℝ) - 2 ≤ 1
+    norm_num
+  · rintro ⟨z₁, z₂⟩ ⟨a, b, c, d, e⟩
+    have c' : z₁ + z₂ ≤ 3 := c
+    have d' : -z₁ + z₂ ≤ 1 := d
+    show -(x₁ * 1 + x₂ * 2) ≤ -(x₁ * z₁ + x₂ * z₂)
+    nlinarith [mul_nonneg h1 (sub_nonneg.2 c'), mul_nonneg (sub_nonneg.2 h)
+      (by linarith : (0 : ℝ) ≤ 2 - z₂)]
+
+private theorem pess_eq_one_two {x₁ x₂ : ℝ} (h1 : 0 ≤ x₁) (h : x₁ < x₂) {y : ℝ × ℝ}
+    (hy : y ∈ solutionMap pessφ (fun _ ↦ pessK) (x₁, x₂)) : y = (1, 2) := by
+  obtain ⟨y₁, y₂⟩ := y
+  obtain ⟨⟨a, b, c, d, e⟩, hmin⟩ := hy
+  have c' : y₁ + y₂ ≤ 3 := c
+  have d' : -y₁ + y₂ ≤ 1 := d
+  have hm : -(x₁ * y₁ + x₂ * y₂) ≤ -(x₁ * 1 + x₂ * 2) :=
+    hmin (1, 2) (pess_mem_one_two h1 h.le).1
+  have h3 : 0 ≤ x₁ * (3 - y₁ - y₂) := mul_nonneg h1 (by linarith)
+  have h4 : (x₂ - x₁) * (2 - y₂) ≤ 0 := by nlinarith
+  have h5 : y₂ = 2 := by
+    refine le_antisymm (by linarith) ?_
+    by_contra hc
+    have := mul_pos (sub_pos.2 h) (sub_pos.2 (not_le.1 hc))
+    linarith
+  exact Prod.ext (by show y₁ = 1; linarith) h5
+
+/-- The Example on pp. 38–39 of [Dempe 2002]: the linear pessimistic bilevel problem
+`min {-y₂ - 10 x₁ - 10 x₂ | 0 ≤ x₁, x₂ ≤ 1}`, where the follower solves
+`min_y {-⟨x, y⟩ | y ≥ 0, y₁ + y₂ ≤ 3, -y₁ + y₂ ≤ 1, y₁ - y₂ ≤ 1}`, has no pessimistic solution:
+the infimal value `-22` of `φ_p` is approached along `x₁ < x₂ → 1`, but at `x = (1, 1)` the
+value is `-21`. -/
+theorem not_exists_isPessimisticSolution_linear_example :
+    ¬ ∃ x₀ y₀, IsPessimisticSolution pessF pessφ (fun _ ↦ pessK)
+      {x : ℝ × ℝ | 0 ≤ x.1 ∧ x.1 ≤ 1 ∧ 0 ≤ x.2 ∧ x.2 ≤ 1} x₀ y₀ := by
+  rintro ⟨⟨x₁, x₂⟩, ⟨y₁, y₂⟩, ⟨hx1, hx1', hx2, hx2'⟩, hy, hmax, hmin⟩
+  have hx1 : 0 ≤ x₁ := hx1
+  have hx1' : x₁ ≤ 1 := hx1'
+  have hx2 : 0 ≤ x₂ := hx2
+  have hx2' : x₂ ≤ 1 := hx2'
+  have hy2 : 0 ≤ y₂ := hy.1.2.1
+  -- the value at `x₀` is larger than `-22`
+  have hc : -22 < pessF ((x₁, x₂), (y₁, y₂)) := by
+    rcases le_or_gt x₂ x₁ with h | h
+    · have h1 : -(1 : ℝ) - 10 * x₁ - 10 * x₂ ≤ pessF ((x₁, x₂), (y₁, y₂)) :=
+        hmax (2, 1) (pess_mem_two_one hx2 h)
+      linarith
+    · have e := pess_eq_one_two hx1 h hy
+      rw [e]
+      show (-22 : ℝ) < -2 - 10 * x₁ - 10 * x₂
+      linarith
+  have hc0 : pessF ((x₁, x₂), (y₁, y₂)) ≤ 0 := by
+    show -y₂ - 10 * x₁ - 10 * x₂ ≤ 0
+    linarith
+  set c := pessF ((x₁, x₂), (y₁, y₂)) with hcdef
+  -- a better point `x = (1 - ε, 1)`
+  set ε : ℝ := (c + 22) / 40 with hε
+  have hε0 : 0 < ε := by rw [hε]; linarith
+  have hε1 : ε < 1 := by rw [hε]; linarith
+  have hsol := pess_mem_one_two (x₁ := 1 - ε) (x₂ := 1) (by linarith) (by linarith)
+  have hval : pessimisticValue pessF pessφ (fun _ ↦ pessK) (1 - ε, 1) =
+      ((-22 + 10 * ε : ℝ) : EReal) := by
+    rw [pessimisticValue_eq hsol fun z hz ↦ by
+      rw [pess_eq_one_two (by linarith) (by linarith) hz]]
+    congr 1
+    show -(2 : ℝ) - 10 * (1 - ε) - 10 * 1 = -22 + 10 * ε
+    ring
+  have hle := isMinOn_iff.1 hmin (1 - ε, 1)
+    ⟨⟨by show (0 : ℝ) ≤ 1 - ε; linarith, by show 1 - ε ≤ 1; linarith,
+      by show (0 : ℝ) ≤ 1; norm_num, by show (1 : ℝ) ≤ 1; norm_num⟩, ⟨_, hsol⟩⟩
+  rw [pessimisticValue_eq hy hmax, hval, EReal.coe_le_coe_iff] at hle
+  rw [hε] at hle
+  linarith
+
+end Bilevel

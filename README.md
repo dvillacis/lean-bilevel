@@ -31,6 +31,8 @@ follower's feasible-set map `K` (or constraints `gᵢ(x, y) ≤ 0`) and the lead
 | Optimality conditions via the KKT reformulation | `BilevelOptimization/KKTOptimality` | Fritz John conditions for the nonsmooth KKT reformulation (5.27) (D Thm. 5.16); KKT conditions under (MFCQ) for the tightened problem (5.30), and nonnegative, unique multipliers under (SMFCQ) (D Thm. 5.17) |
 | Farkas' lemma | `BilevelOptimization/Farkas` | conic Carathéodory, closedness of finitely generated cones, Farkas' lemma in finite-dimensional normed spaces |
 | Linear bilevel problems | `BilevelOptimization/LinearBilevel` | LP–LP bilevel problems [Schmidt 2024]: KKT conditions of the follower's LP without constraint qualification, weak and strong duality, global equivalence with the KKT, strong-duality and big-M reformulations |
+| Geometry of linear bilevel problems | `BilevelOptimization/LinearGeometry` | D Ch. 3: polyhedral solution map (D Thm. 3.1), existence (D Thm. 3.3), vertex solutions (D Cor. 3.1), optimality via the duality gap (D Thm. 3.11), examples D pp. 30, 38–39 |
+| Lipschitz set-valued maps | `BilevelOptimization/LipschitzMaps` | upper and local Lipschitz continuity (D Def. 4.3) and their relation to semicontinuity and the Lipschitz-like property |
 | Local KKT solutions | `BilevelOptimization/KKTLocal` | local solutions of (5.26) for every multiplier are local bilevel solutions, and the local equivalence under convexity and Slater [Dempe–Dutta 2012, Thm. 3.1]; under (CRCQ) the vertices of the multiplier set suffice (Cor. 3.3); a counterexample with a single multiplier |
 
 D = [Dempe 2002]. `ROADMAP.md` lists the statements of the sources with their Lean names or status.

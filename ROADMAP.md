@@ -23,6 +23,26 @@ slide pages), DD = [Dempe–Dutta 2012].
 | S p. 85 | optimistic = pessimistic for unique lower-level solutions | ✓ | `isOptimisticSolution_iff_isPessimisticSolution`, `isLocalOptimisticSolution_iff_isLocalPessimisticSolution`, `optimisticValue_eq_pessimisticValue` | `Ψ(x)` has at most one point for `x ∈ Ω`; it may be empty |
 | S p. 42 | high-point relaxation | ✓ | `highPointFeasible`, `bilevelFeasible_subset_highPointFeasible`, `iInf_highPointFeasible_le`, `isOptimisticSolution_of_isMinOn_highPointFeasible` | |
 
+## D Ch. 3: linear bilevel problems
+
+In `LinearGeometry.lean`, for the LP–LP model `LinearBilevel` (follower `min_y {d y | C x + D y ≥ b}`).
+
+| # | Statement | Status | Lean | Notes |
+|---|---|---|---|---|
+| D Ex. p. 30 | example of Fig. 3.1 | ✓ | `isMinOn_linear_example` | |
+| D Def 3.1 | polyhedral point-to-set maps | ✓ | `IsConvexPolyhedral`, `IsPolyhedralMap` | |
+| D Thm 3.1 | `Ψ_L` is polyhedral | ✓ | `LinearBilevel.graph_lowerSolution_eq`, `LinearBilevel.isPolyhedralMap_lowerSolution`, `LinearBilevel.feasible_eq`, `LinearBilevel.isClosed_feasible` | union of faces whose active set supports a dual feasible multiplier |
+| D Cor 3.1 | a solution at a vertex | ✓ | `LinearBilevel.exists_isMinOn_feasible_mem_extremePoints` | uniqueness of the follower's solution not needed (optimistic case); constraint set assumed bounded; upper-level constraints may depend on `y` |
+| D Thm 3.2 | existence under uniqueness, problem (3.4) | ☐ | | follower's objective depends on the leader; not an instance of `LinearBilevel` |
+| D Thm 3.3 | existence of optimistic solutions | ✓ | `LinearBilevel.exists_isMinOn_feasible` | |
+| D Ex. pp. 38–39 | pessimistic problem without solution | ✓ | `not_exists_isPessimisticSolution_linear_example` | |
+| D Ex. p. 33 | disconnected feasible set | ☐ | | |
+| D Thm 3.4–3.5 | relations to multicriteria optimization | ☐ | | |
+| D Sect. 3.4.2 | 0-1 (big-M) reformulation | ✓ | see S p. 133 below | |
+| D Thm 3.6–3.7 | F. John / KKT conditions | ☐ | | compare the general D Thm 5.16–5.17 |
+| D Thm 3.8–3.10 | regions of stability, basic matrices | ☐ | | |
+| D Thm 3.11 | global optimality via the duality gap | ✓ | `LinearBilevel.isMinOn_feasible_iff_forall_gap_pos` | pointwise form; avoids attainment in the quadratic problem (3.23) |
+
 ## D Ch. 4: parametric optimization
 
 | # | Statement | Status | Lean | Notes |
@@ -37,7 +57,7 @@ slide pages), DD = [Dempe–Dutta 2012].
 | D Def 4.1 | semicontinuity of functions | ✓ | Mathlib `LowerSemicontinuousAt`, `UpperSemicontinuousAt` | |
 | D Thm 4.2 | `Λ` and `SP` u.s.c. under (C), (MFCQ) | ✓ | `upperHemicontinuousAt_lowerMultipliers`, `upperHemicontinuousAt_stationaryMap`, `exists_eventually_lowerMultipliers_subset`, `isClosed_graph_lowerMultipliers` | for `SP`, (MFCQ) at all feasible `(x̄, y)`: the book's (MFCQ) on `SP(x̄)` is not enough (`not_upperHemicontinuousAt_stationaryMap_example`) |
 | D Ex. p. 73 | `Ψ_loc` not u.s.c. (`x³/3 − yx`); D Ex. p. 74: no continuous selection of `Ψ` | ✓ | `not_upperHemicontinuousAt_localSolutionMap_example`, `not_exists_continuous_selection_example` | |
-| D Def 4.3 | upper / local Lipschitz continuity of set-valued maps | ☐ | | compare `VariationalAnalysis.LipschitzLikeAt` |
+| D Def 4.3 | upper / local Lipschitz continuity of set-valued maps | ✓ | `UpperLipschitzAt`, `LocallyLipschitzAt`, `LocallyLipschitzAt.upperLipschitzAt`, `UpperLipschitzAt.upperHemicontinuousAt`, `LocallyLipschitzAt.lowerHemicontinuousAt`, `LocallyLipschitzAt.lipschitzLikeAt`, `upperLipschitzAt_singleton_iff`, `locallyLipschitzAt_singleton_iff`, `not_locallyLipschitzAt_example` | in `LipschitzMaps.lean`; nonempty compact images are not part of the definitions; single-valued case is D Def 4.4 |
 | D Thm 4.4 | strong stability under (MFCQ), (SSOC) [Kojima] | ☐ | | |
 | D Sect. 4.3–4.4, Thm 4.5–4.13 | `PC¹` functions, directional differentiability of local solution functions (SSOC, CRCQ) | ☐ | | |
 | D Thm 4.14 | value function locally Lipschitz under (C), (MFCQ) | ✓ | `exists_lipschitzOnWith_lowerValue_of_locallyBoundedAt` | (C) replaced by continuity of `g` and local boundedness of `G`; via [Mordukhovich 2018, Thm. 4.3] and `lipschitzLikeAt_lowerFeasible` |
@@ -100,5 +120,5 @@ slide pages), DD = [Dempe–Dutta 2012].
 
 ## Not started
 
-D Ch. 3 (linear bilevel problems), Ch. 5.2–5.3, 5.7, Ch. 7
+Ch. 5.2–5.3, 5.7, Ch. 7
 (regularization), Ch. 8 (discrete bilevel problems).
