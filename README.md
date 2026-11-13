@@ -35,6 +35,7 @@ follower's feasible-set map `K` (or constraints `gᵢ(x, y) ≤ 0`) and the lead
 | Lipschitz set-valued maps | `BilevelOptimization/LipschitzMaps` | upper and local Lipschitz continuity (D Def. 4.3) and their relation to semicontinuity and the Lipschitz-like property |
 | Piecewise smooth functions | `BilevelOptimization/PiecewiseSmooth` | `PC¹` functions (D Def. 4.5): local Lipschitz continuity (D Thm. 4.6), directional and Bouligand differentiability (D Def. 4.9–4.10, (4.15)) |
 | Strong stability | `BilevelOptimization/StrongStability` | (SSOC), second-order sufficiency, uniqueness of nearby KKT points and Kojima's strong stability under (LICQ) (D Thm. 4.4) |
+| Piecewise smooth solutions | `BilevelOptimization/PiecewiseSolution` | selection functions of (4.19) by the implicit function theorem; the local solution function is `PC¹` (D Thm. 4.10) and its directional derivative solves `QP(λ⁰, r)` (D Thm. 4.11), under (LICQ) and (SSOC) |
 | Local KKT solutions | `BilevelOptimization/KKTLocal` | local solutions of (5.26) for every multiplier are local bilevel solutions, and the local equivalence under convexity and Slater [Dempe–Dutta 2012, Thm. 3.1]; under (CRCQ) the vertices of the multiplier set suffice (Cor. 3.3); a counterexample with a single multiplier |
 
 D = [Dempe 2002]. `ROADMAP.md` lists the statements of the sources with their Lean names or status.
