@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: David Villacís
 -/
 import BilevelOptimization.KKT
-import BilevelOptimization.Farkas
+import VariationalAnalysis.Analysis.Farkas
 
 /-!
 # Single-level reformulations of linear bilevel problems
@@ -25,7 +25,8 @@ and its three single-level reformulations:
 
 * `mem_lowerSolution_iff`: strong duality for the follower's LP: `y` solves the follower's
   problem iff it is feasible and has a dual feasible `λ` satisfying complementarity. No
-  constraint qualification is needed (Farkas' lemma, `exists_nonneg_eq_sum_of_forall_nonneg`).
+  constraint qualification is needed (Farkas' lemma,
+  `VariationalAnalysis.exists_nonneg_eq_sum_of_forall_nonneg`).
 * `mem_lowerSolution_iff_exists_isLowerKKT`: the same in terms of the general KKT conditions
   `IsLowerKKT` of `BilevelOptimization.KKT`.
 * `sum_mul_le_of_isDualFeasible`, `complementarity_iff_le`, `complementarity_iff_eq`: weak duality,
@@ -218,7 +219,7 @@ theorem mem_lowerSolution_iff [FiniteDimensional ℝ F] :
       have ht0' : (0 : ℝ) < t := ht0
       nlinarith
     -- Farkas' lemma on the active constraints
-    obtain ⟨μ, hμ, hμd⟩ := exists_nonneg_eq_sum_of_forall_nonneg
+    obtain ⟨μ, hμ, hμd⟩ := VariationalAnalysis.exists_nonneg_eq_sum_of_forall_nonneg
       (fun i : {i // P.slack i (x, y) = 0} ↦ P.D i.1) P.d hdir
     obtain ⟨lam, hlp, hln⟩ : ∃ lam : ι → ℝ, (∀ i (hi : P.slack i (x, y) = 0), lam i = μ ⟨i, hi⟩) ∧
         ∀ i, ¬ P.slack i (x, y) = 0 → lam i = 0 :=

@@ -1,5 +1,4 @@
 import BilevelOptimization.Basic
-import BilevelOptimization.Farkas
 import BilevelOptimization.KKT
 import BilevelOptimization.KKTLocal
 import BilevelOptimization.KKTOptimality
