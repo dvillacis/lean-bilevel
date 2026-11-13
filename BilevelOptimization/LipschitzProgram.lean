@@ -183,6 +183,21 @@ theorem NonsmoothLICQ.nonsmoothMFCQ [FiniteDimensional ℝ X] (hcq : NonsmoothLI
     choose ξ hξ using hH
     exact ⟨fun _ ↦ le_rfl, fun _ ↦ zero_mul _, η, hη, ξ, hξ, by simp⟩
 
+/-- A nontrivial abnormal multiplier excludes (NMFCQ) and (NLICQ) (Thm. 5.18). -/
+theorem not_nonsmoothMFCQ_of_abnormalMultiplier [FiniteDimensional ℝ X]
+    (h : ∃ m ∈ abnormalMultipliers G H z, m ≠ 0) :
+    ¬ NonsmoothMFCQ G H z ∧ ¬ NonsmoothLICQ G H z := by
+  obtain ⟨m, hm, hne⟩ := h
+  obtain ⟨-, -, η, hη, ξ, hξ, -⟩ := id hm
+  have hG : ∀ i, (clarkeSubdiff (G i) z).Nonempty := fun i ↦ ⟨η i, hη i⟩
+  have hH : ∀ k, (clarkeSubdiff (H k) z).Nonempty := fun k ↦ ⟨ξ k, hξ k⟩
+  have hMF : ¬ NonsmoothMFCQ G H z := by
+    rw [nonsmoothMFCQ_iff_abnormalMultipliers_eq hG hH]
+    intro hΛ
+    rw [hΛ] at hm
+    exact hne hm
+  exact ⟨hMF, fun hLI ↦ hMF (hLI.nonsmoothMFCQ hG hH)⟩
+
 /-! ### Multiplier rules -/
 
 variable [FiniteDimensional ℝ X]

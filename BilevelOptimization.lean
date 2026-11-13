@@ -2,6 +2,7 @@ import BilevelOptimization.Basic
 import BilevelOptimization.Farkas
 import BilevelOptimization.KKT
 import BilevelOptimization.KKTLocal
+import BilevelOptimization.KKTRegularity
 import BilevelOptimization.LinearBilevel
 import BilevelOptimization.LipschitzProgram
 import BilevelOptimization.Parametric

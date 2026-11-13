@@ -25,6 +25,7 @@ follower's feasible-set map `K` (or constraints `gᵢ(x, y) ≤ 0`) and the lead
 | Lipschitz programs | `BilevelOptimization/LipschitzProgram` | nonsmooth (MFCQ)/(LICQ) and abnormal multipliers (D Thm. 5.18), the Clarke multiplier rule in Fritz John and KKT form |
 | Value function approach | `BilevelOptimization/ValueFunctionOptimality` | failure of nonsmooth constraint qualifications for (5.36) (D Thm. 5.19), Fritz John and KKT conditions via the Clarke gradient of the value function (D Thm. 5.20, 5.21) |
 | KKT reformulation | `BilevelOptimization/KKT` | KKT conditions of a convex follower (sufficiency, necessity under Slater or positive linear independence), global equivalence with (5.26) [Dempe–Dutta 2012], local solutions (D Thm. 5.15), counterexamples without convexity or Slater |
+| Regularity of the KKT reformulation | `BilevelOptimization/KKTRegularity` | (MFCQ) and (LICQ) fail at every feasible point of a program containing complementarity conditions (D Thm. 5.11), in particular of the KKT reformulation (5.26) and of its LP–LP version [Schmidt 2024, p. 127] |
 | Farkas' lemma | `BilevelOptimization/Farkas` | conic Carathéodory, closedness of finitely generated cones, Farkas' lemma in finite-dimensional normed spaces |
 | Linear bilevel problems | `BilevelOptimization/LinearBilevel` | LP–LP bilevel problems [Schmidt 2024]: KKT conditions of the follower's LP without constraint qualification, weak and strong duality, global equivalence with the KKT, strong-duality and big-M reformulations |
 | Local KKT solutions | `BilevelOptimization/KKTLocal` | local solutions of (5.26) for every multiplier are local bilevel solutions, and the local equivalence under convexity and Slater [Dempe–Dutta 2012, Thm. 3.1]; under (CRCQ) the vertices of the multiplier set suffice (Cor. 3.3); a counterexample with a single multiplier |
@@ -47,5 +48,9 @@ lake env lean scripts/AuditAxioms.lean   # checks that no proof uses `sorry`
 * [Dempe–Dutta 2012] S. Dempe, J. Dutta, Is bilevel programming a special case of a mathematical
   program with complementarity constraints?, *Math. Program.* 131 (2012) 37–48.
 * [Mordukhovich 2018] B. S. Mordukhovich, *Variational Analysis and Applications*, Springer, 2018.
+* [Scheel–Scholtes 2000] H. Scheel, S. Scholtes, Mathematical programs with complementarity
+  constraints: stationarity, optimality, and sensitivity, *Math. Oper. Res.* 25 (2000) 1–22.
 * [Schmidt 2024] M. Schmidt, *A Primer on Bilevel and Robust Optimization*, lecture notes,
   IWOBIP 2024.
+* [Ye–Zhu 1995] J. J. Ye, D. L. Zhu, Optimality conditions for bilevel programming problems,
+  *Optimization* 33 (1995) 9–27.
