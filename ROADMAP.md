@@ -78,6 +78,19 @@ In `LinearGeometry.lean`, for the LP–LP model `LinearBilevel` (follower `min_y
 | D Cor 4.6 | `∂̄φ(y⁰) = ∇L(x⁰, y⁰, Λ(x⁰, y⁰))` for convex problems with `Ψ(y⁰) = {x⁰}` | ✓ | `clarkeSubdiff_lowerValue_eq_of_isConvexLower`, `eventually_le_lowerValue_of_isConvexLower`, `upperHemicontinuousAt_lowerSolution` | direct proof by strict differentiability, not via Thm 4.16 |
 | D Cor 4.7 | the same for jointly convex problems, `Ψ(y⁰)` arbitrary | ✓ | `clarkeSubdiff_lowerValue_eq_of_convexOn`, `le_lowerValue_of_convexOn`, `lagrangianGradients_subset_of_convexOn` | via KKT for the joint problem instead of Lemma 4.4 and the saddle-point argument; (MFCQ) at all `y ∈ Ψ(y⁰)` |
 
+## D Ch. 5.2: optimality conditions based on strong stability
+
+In `StrongStabilityOptimality.lean`.
+
+| # | Statement | Status | Lean | Notes |
+|---|---|---|---|---|
+| D (5.9) | unique lower-level solution function `Ψ(x) = {y(x)}` near `x̄` | ✓ | `exists_solutionFunction_of_isConvexLower` | convex lower level with (LICQ), (SSOC); `y(·)` is `PC¹` and directionally differentiable with derivative from `QP(λ⁰, r)` |
+| D (ULR) | upper level regularity | ✓ | hypothesis `∃ r₀, ∀ k active, ∇Gₖ(x̄) r₀ < 0` | primal form, as in the book |
+| D Thm 5.4 | (5.10) and, under (ULR), (5.11) at local optimal solutions | ✓ | `nonneg_fderiv_of_isLocalMinOn_bilevelFeasible` | under (LICQ) instead of (MFCQ) + (CRCQ), like D Thm 4.4, 4.10, 4.11; stated in the sign form `∇f(x̄, ȳ)(r, y'(x̄; r)) ≥ 0` (the value of (5.10)/(5.11) is nonnegative); chain rule `tendsto_slope_comp_of_hasFDerivAt` |
+| D (5.12) | combinatorial form via `QP(λ, K)` over index sets | ☐ | | |
+| D Ex. p. 138 | (5.10), (5.11) are not sufficient | ✓ | `solutionMap_example`, `hasDerivAt_example`, `not_isLocalMinOn_example` | `f(u², u) − f(1, 1) = (u − 1)³(u + 3)` |
+| D Ex. pp. 139–140 | assumption (A) without (CRCQ): `Ω(r)` does not determine `y'(x̄; r)` | ☐ | | |
+
 ## D Ch. 5.4–5.5 / S "Single-level reformulations": the KKT reformulation
 
 | # | Statement | Status | Lean | Notes |
@@ -129,5 +142,5 @@ In `LinearGeometry.lean`, for the LP–LP model `LinearBilevel` (follower `min_y
 
 ## Not started
 
-Ch. 5.2–5.3, 5.7, Ch. 7
+Ch. 5.3, 5.7, Ch. 7
 (regularization), Ch. 8 (discrete bilevel problems).
