@@ -391,15 +391,16 @@ theorem continuousAt_marginal (hK : IsClosed (graph K))
   continuousAt_iff_lower_upperSemicontinuousAt.2
     ⟨lowerSemicontinuousAt_marginal hK hb hφ, upperSemicontinuousAt_marginal hlsc hφ⟩
 
-/-- Thm. 4.3 of [Dempe 2002], upper semicontinuity of the solution map, under the assumptions
-of `continuousAt_marginal`. -/
-theorem upperHemicontinuousAt_solutionMap (hK : IsClosed (graph K))
-    (hb : ∃ U ∈ 𝓝 x₀, ∃ C, IsCompact C ∧ ∀ x ∈ U, K x ⊆ C) (hlsc : LowerHemicontinuousAt K x₀)
+/-- The Berge argument behind Thm. 4.3 of [Dempe 2002]: if `gph K` is closed, `K` is uniformly
+bounded near `x₀` and the value function is upper semicontinuous at `x₀`, the solution map is
+upper semicontinuous at `x₀`. -/
+theorem upperHemicontinuousAt_solutionMap_of_upperSemicontinuousAt (hK : IsClosed (graph K))
+    (hb : ∃ U ∈ 𝓝 x₀, ∃ C, IsCompact C ∧ ∀ x ∈ U, K x ⊆ C)
+    (husc : UpperSemicontinuousAt (marginal (fun p ↦ (φ p : EReal)) K) x₀)
     (hφ : Continuous φ) : UpperHemicontinuousAt (solutionMap φ K) x₀ := by
   intro V hV hΨV
   obtain ⟨U, hU, C, hC, hKC⟩ := hb
   have hc : Continuous fun p : E × F ↦ (φ p : EReal) := continuous_coe_real_ereal.comp hφ
-  have husc := upperSemicontinuousAt_marginal hlsc hφ
   have hP : ∀ y ∈ C, ∀ᶠ p : E × F in 𝓝 (x₀, y), p.2 ∈ solutionMap φ K p.1 → p.2 ∈ V := by
     intro y _
     by_cases hyV : y ∈ V
@@ -417,6 +418,14 @@ theorem upperHemicontinuousAt_solutionMap (hK : IsClosed (graph K))
   filter_upwards [hU, hC.eventually_forall_of_forall_eventually
     (P := fun x y ↦ y ∈ solutionMap φ K x → y ∈ V) hP] with x hxU hx y hy
   exact hx y (hKC x hxU hy.1) hy
+
+/-- Thm. 4.3 of [Dempe 2002], upper semicontinuity of the solution map, under the assumptions
+of `continuousAt_marginal`. -/
+theorem upperHemicontinuousAt_solutionMap (hK : IsClosed (graph K))
+    (hb : ∃ U ∈ 𝓝 x₀, ∃ C, IsCompact C ∧ ∀ x ∈ U, K x ⊆ C) (hlsc : LowerHemicontinuousAt K x₀)
+    (hφ : Continuous φ) : UpperHemicontinuousAt (solutionMap φ K) x₀ :=
+  upperHemicontinuousAt_solutionMap_of_upperSemicontinuousAt hK hb
+    (upperSemicontinuousAt_marginal hlsc hφ) hφ
 
 /-! ### Thm. 5.2 and 5.3: existence of optimistic and pessimistic solutions -/
 
