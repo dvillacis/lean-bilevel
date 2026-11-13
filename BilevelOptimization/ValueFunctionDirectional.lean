@@ -9,9 +9,9 @@ import BilevelOptimization.Farkas
 /-!
 # Directional derivatives of the optimal value function
 
-Thm. 4.15 and Thm. 4.16 of [Dempe 2002]: bounds for the Dini directional derivatives of the
-follower's optimal value function `μ(x) = inf {φ(x, y) | gᵢ(x, y) ≤ 0}`, and its directional
-differentiability for convex problems.
+Thm. 4.15, Cor. 4.4 and Thm. 4.16 of [Dempe 2002]: bounds for the Dini directional derivatives of
+the follower's optimal value function `μ(x) = inf {φ(x, y) | gᵢ(x, y) ≤ 0}`, and its directional
+differentiability under (LICQ) and for convex problems.
 
 ## Main definitions
 
@@ -30,6 +30,9 @@ differentiability for convex problems.
 * `exists_tendsto_slope_lowerValue_of_eventually_isConvexLower`: if the follower's problem is
   convex for all `x` near `x̄`, also
   `μ'(x̄; r) = max_{λ ∈ Λ} min_{y ∈ Ψ(x̄)} ∇ₓL(x̄, y, λ) r`, the formula of the book.
+* `exists_tendsto_slope_lowerValue_of_lowerLICQ`: Cor. 4.4 of [Dempe 2002]: under (LICQ) at all
+  `(x̄, y)`, `y ∈ Ψ(x̄)`, `μ'(x̄; r) = min {∇ₓL(x̄, y, λ(y)) r | y ∈ Ψ(x̄)}`, with the unique
+  multiplier `λ(y)` (`lowerMultipliers_subsingleton_of_lowerLICQ`).
 * `exists_lowerMultiplier_direction`: the duality of the linear programs (4.51) and (4.52).
 * `lowerMultipliers_subset_of_isConvexLower`: for convex problems `Λ(x, y)` does not depend on
   `y ∈ Ψ(x)`.
@@ -52,6 +55,9 @@ differentiability for convex problems.
   compactness; since `∇ₓL(x̄, y, λ) r` is not convex in `y`, no minimax theorem applies. Here
   the lower bound is sharpened to `min max ≤ D₊μ` and the upper bound to `D⁺μ ≤ max min`, by
   using in each a single limit point of the solutions `y(t)`, resp. of the multipliers `λ(t)`.
+* In Cor. 4.4 the continuity of `y ↦ λ(y)` is not needed: the minimum is attained because the
+  pairs `(y, λ)` with `y ∈ Ψ(x̄)`, `λ ∈ Λ(x̄, y)` form a compact set (closed graph and local
+  boundedness of `Λ`, Thm. 4.2).
 * (C) is replaced by local boundedness of the feasible-set map at `x̄`, and (MFCQ) at one feasible
   point by Slater's condition (for convex problems they are equivalent, as the book remarks).
 -/
@@ -841,5 +847,126 @@ theorem exists_tendsto_slope_lowerValue_of_eventually_isConvexLower (hφ : ContD
   obtain ⟨y, hy, he⟩ := hatt lam
   have : n lam ≤ n ls := hmax (by rwa [hΛeq y₁ hy₁] at hlam)
   exact ⟨y, hy, by rw [he]; linarith⟩
+
+/-! ### Cor. 4.4: directional differentiability under (LICQ) -/
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
+/-- Under (LICQ) the multiplier of the follower's problem is unique. -/
+theorem lowerMultipliers_subsingleton_of_lowerLICQ {x : E} {y : F} (h : LowerLICQ g x y) :
+    (lowerMultipliers φ g x y).Subsingleton := by
+  classical
+  intro lam hlam lam' hlam'
+  set ν : ι → ℝ := fun i ↦ lam i - lam' i with hν
+  have hin : ∀ i, g i (x, y) ≠ 0 → ν i = 0 := fun i hi ↦ by
+    simp only [hν]
+    rw [(mul_eq_zero.1 (hlam.2.2.1 i)).resolve_right hi,
+      (mul_eq_zero.1 (hlam'.2.2.1 i)).resolve_right hi, sub_zero]
+  have hsum : ∑ i, ν i • fderiv ℝ (fun z ↦ g i (x, z)) y = 0 := by
+    have e : ∀ i, ν i • fderiv ℝ (fun z ↦ g i (x, z)) y =
+        lam i • fderiv ℝ (fun z ↦ g i (x, z)) y - lam' i • fderiv ℝ (fun z ↦ g i (x, z)) y :=
+      fun i ↦ by simp only [hν]; module
+    rw [Finset.sum_congr rfl fun i _ ↦ e i, Finset.sum_sub_distrib, sub_eq_zero]
+    exact add_left_cancel (hlam.2.2.2.trans hlam'.2.2.2.symm)
+  have hsplit := Fintype.sum_subtype_add_sum_subtype (fun i ↦ g i (x, y) = 0)
+    fun i ↦ ν i • fderiv ℝ (fun z ↦ g i (x, z)) y
+  have hrest : ∑ i : {i // ¬ g i (x, y) = 0}, ν i.1 • fderiv ℝ (fun z ↦ g i.1 (x, z)) y = 0 :=
+    Finset.sum_eq_zero fun i _ ↦ by rw [hin i.1 i.2, zero_smul]
+  rw [hrest, add_zero, hsum] at hsplit
+  have hA := Fintype.linearIndependent_iff.1 h (fun i ↦ ν i.1) hsplit
+  funext i
+  by_cases hi : g i (x, y) = 0
+  · exact sub_eq_zero.1 (hA ⟨i, hi⟩)
+  · exact sub_eq_zero.1 (hin i hi)
+
+/-- Cor. 4.4 of [Dempe 2002]: if the follower's problem has `C¹` data, a feasible-set map that is
+locally bounded at `x̄`, and (LICQ) holds at all `(x̄, y)`, `y ∈ Ψ(x̄)`, then the optimal value
+function is directionally differentiable at `x̄` with
+`μ'(x̄; r) = min {∇ₓL(x̄, y, λ(y)) r | y ∈ Ψ(x̄)}`, where `λ(y)` is the multiplier at `y`. -/
+theorem exists_tendsto_slope_lowerValue_of_lowerLICQ (hφ : ContDiff ℝ 1 φ)
+    (hg : ∀ i, ContDiff ℝ 1 (g i)) (hb : LocallyBoundedAt (lowerFeasible g) x₀)
+    (hne : (lowerFeasible g x₀).Nonempty)
+    (hlicq : ∀ y ∈ lowerSolution φ g x₀, LowerLICQ g x₀ y) (r : E) :
+    ∃ v : ℝ, Tendsto (fun t : ℝ ↦ ((lowerValue φ g (x₀ + t • r)).toReal -
+        (lowerValue φ g x₀).toReal) / t) (𝓝[>] 0) (𝓝 v) ∧
+      (∃ y ∈ lowerSolution φ g x₀, ∃ lam ∈ lowerMultipliers φ g x₀ y,
+        lagrangianGradient φ g x₀ y lam r = v) ∧
+      ∀ y ∈ lowerSolution φ g x₀, ∀ lam ∈ lowerMultipliers φ g x₀ y,
+        v ≤ lagrangianGradient φ g x₀ y lam r := by
+  have hφc := hφ.continuous
+  have hgc := fun i ↦ (hg i).continuous
+  have hφd := hφ.differentiable one_ne_zero
+  have hgd := fun i ↦ (hg i).differentiable one_ne_zero
+  have hpli : ∀ y ∈ lowerSolution φ g x₀, LowerPLI g x₀ y := fun y hy ↦
+    lowerPLI_of_lowerLICQ hy.1 (hlicq y hy)
+  have hreg : ∀ y ∈ lowerSolution φ g x₀, LowerLevelRegular g x₀ y := fun y hy ↦
+    (lowerPLI_iff_lowerLevelRegular fun i ↦ hgd i (x₀, y)).1 (hpli y hy)
+  have hKΨ : IsCompact (lowerSolution φ g x₀) := by
+    rw [← solutionMap_lowerFeasible]
+    exact isCompact_solutionMap (eventually_isCompact_lowerFeasible hgc hb).self_of_nhds hφc
+  obtain ⟨y₀, hy₀⟩ := (eventually_lowerSolution_nonempty hgc hφc hb).self_of_nhds hne
+  obtain ⟨lam₀, hlam₀⟩ : (lowerMultipliers φ g x₀ y₀).Nonempty :=
+    exists_isLowerKKT_of_mem_solutionMap (by rwa [solutionMap_lowerFeasible])
+      ((hφd (x₀, y₀)).comp y₀ (hasFDerivAt_prodMk_right x₀ y₀).differentiableAt)
+      (fun i ↦ ((hg i).comp (by fun_prop : ContDiff ℝ 1 fun w : F ↦ (x₀, w))).contDiffAt)
+      (hpli y₀ hy₀)
+  -- the pairs `(y, λ)` with `y ∈ Ψ(x̄)`, `λ ∈ Λ(x̄, y)` form a compact set
+  set T : Set (F × (ι → ℝ)) := (Prod.fst ⁻¹' lowerSolution φ g x₀) ∩
+    ((fun q : F × (ι → ℝ) ↦ ((x₀, q.1), q.2)) ⁻¹'
+      graph fun p : E × F ↦ lowerMultipliers φ g p.1 p.2) with hT
+  have hTcl : IsClosed T := (hKΨ.isClosed.preimage continuous_fst).inter
+    ((isClosed_graph_lowerMultipliers hφ hg).preimage (by fun_prop))
+  have hloc : ∀ y ∈ lowerSolution φ g x₀, ∃ R : ℝ, ∃ V : Set F, V ∈ 𝓝 y ∧
+      ∀ y' ∈ V, lowerMultipliers φ g x₀ y' ⊆ Metric.closedBall 0 R := fun y hy ↦ by
+    obtain ⟨R, hR⟩ := exists_eventually_lowerMultipliers_subset hφ hg (hpli y hy)
+    exact ⟨R, _, ((continuous_const.prodMk continuous_id).tendsto y).eventually hR,
+      fun y' hy' ↦ hy'⟩
+  choose! R V hV hRV using hloc
+  obtain ⟨t, ht, hcover⟩ := hKΨ.elim_nhds_subcover V hV
+  have hTsub : T ⊆ lowerSolution φ g x₀ ×ˢ Metric.closedBall (0 : ι → ℝ) (∑ y ∈ t, |R y|) := by
+    rintro ⟨y, lam⟩ ⟨hy, hlam⟩
+    obtain ⟨y', hy't, hyV⟩ := mem_iUnion₂.1 (hcover hy)
+    exact ⟨hy, Metric.closedBall_subset_closedBall ((le_abs_self _).trans
+      (Finset.single_le_sum (f := fun y ↦ |R y|) (fun _ _ ↦ abs_nonneg _) hy't))
+      (hRV y' (ht y' hy't) y hyV hlam)⟩
+  have hTc : IsCompact T :=
+    (hKΨ.prod (isCompact_closedBall 0 _)).of_isClosed_subset hTcl hTsub
+  obtain ⟨⟨ys, ls⟩, ⟨hys, hls⟩, hmin⟩ := hTc.exists_isMinOn ⟨(y₀, lam₀), hy₀, hlam₀⟩
+    (continuous_lagrangianGradient_prod hφ hg x₀ r).continuousOn
+  have hys' : ys ∈ lowerSolution φ g x₀ := hys
+  have hls' : ls ∈ lowerMultipliers φ g x₀ ys := hls
+  have hminT : ∀ y ∈ lowerSolution φ g x₀, ∀ lam ∈ lowerMultipliers φ g x₀ y,
+      lagrangianGradient φ g x₀ ys ls r ≤ lagrangianGradient φ g x₀ y lam r :=
+    fun y hy lam hlam ↦ hmin (a := (y, lam)) ⟨hy, hlam⟩
+  set v := lagrangianGradient φ g x₀ ys ls r with hv
+  have hμ₀ : lowerValue φ g x₀ = (φ (x₀, ys) : ℝ) :=
+    VariationalAnalysis.lowerValue_eq_of_mem_lowerSolution hys'
+  have hupper : ∀ c, v < c → ∀ᶠ t in 𝓝[>] (0 : ℝ),
+      lowerValue φ g (x₀ + t • r) ≤ ((φ (x₀, ys) + t * c : ℝ) : EReal) := fun c hc ↦
+    eventually_lowerValue_add_smul_le (hφd _) (fun i ↦ hgd i _) ⟨ls, hls'⟩ (hpli ys hys')
+      fun lam hlam ↦ by
+        rw [lowerMultipliers_subsingleton_of_lowerLICQ (hlicq ys hys') hlam hls']
+        exact hc
+  have hlower : ∀ c, c < v → ∀ᶠ t in 𝓝[>] (0 : ℝ),
+      ((φ (x₀, ys) + t * c : ℝ) : EReal) ≤ lowerValue φ g (x₀ + t • r) := fun c hc ↦
+    eventually_le_lowerValue_add_smul hgc hφc hb hne (fun y _ ↦ hφ.contDiffAt)
+      (fun y _ i ↦ (hg i).contDiffAt) hreg hμ₀ fun y hy u hu ↦ by
+        obtain ⟨lam, hl0, hcs, hstat, rfl⟩ := hu
+        have hmem : lam ∈ lowerMultipliers φ g x₀ y := by
+          refine ⟨hy.1, hl0, hcs, ?_⟩
+          have e : ∀ i, fderiv ℝ (fun z ↦ g i (x₀, z)) y =
+              (fderiv ℝ (g i) (x₀, y)).comp (inr ℝ E F) := fun i ↦ fderiv_section (hgd i _)
+          rw [fderiv_section (hφd _)]
+          simp only [e]
+          exact hstat
+        exact hc.trans_le (hminT y hy lam hmem)
+  refine ⟨v, ?_, ⟨ys, hys', ls, hls', rfl⟩, hminT⟩
+  simp only [hμ₀, EReal.toReal_coe]
+  refine tendsto_order.2 ⟨fun c hc ↦ ?_, fun c hc ↦ ?_⟩
+  · filter_upwards [hlower ((c + v) / 2) (by linarith), hupper (v + 1) (by linarith),
+      self_mem_nhdsWithin] with t h1 h2 ht
+    exact lt_of_lt_of_le (by linarith) (slope_bounds_of_coe_le ht h1 h2).1
+  · filter_upwards [hlower (v - 1) (by linarith), hupper ((c + v) / 2) (by linarith),
+      self_mem_nhdsWithin] with t h1 h2 ht
+    exact lt_of_le_of_lt (slope_bounds_of_coe_le ht h1 h2).2 (by linarith)
 
 end Bilevel
