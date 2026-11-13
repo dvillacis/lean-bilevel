@@ -11,6 +11,7 @@ import BilevelOptimization.LipschitzProgram
 import BilevelOptimization.MPCC
 import BilevelOptimization.Parametric
 import BilevelOptimization.PiecewiseSmooth
+import BilevelOptimization.StrongStability
 import BilevelOptimization.ValueFunction
 import BilevelOptimization.ValueFunctionDirectional
 import BilevelOptimization.ValueFunctionOptimality
