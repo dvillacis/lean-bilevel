@@ -14,6 +14,7 @@ import BilevelOptimization.PiecewiseSmooth
 import BilevelOptimization.PiecewiseSolution
 import BilevelOptimization.StrongStability
 import BilevelOptimization.StrongStabilityOptimality
+import BilevelOptimization.UpperLipschitzSolution
 import BilevelOptimization.ValueFunction
 import BilevelOptimization.ValueFunctionDirectional
 import BilevelOptimization.ValueFunctionOptimality
