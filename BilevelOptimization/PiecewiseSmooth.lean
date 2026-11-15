@@ -29,6 +29,9 @@ Sect. 4.3 of [Dempe 2002]: a function `z` is *piecewise continuously differentia
 * `HasDirDerivAt`, `IsBouligandDiffAt`: Def. 4.9 and 4.10 of [Dempe 2002].
 * `HasDirDerivAt.norm_sub_le`, `HasDirDerivAt.map_smul`: the directional derivative of a locally
   Lipschitz function is Lipschitz with the same constant and positively homogeneous.
+* `tendsto_slope_comp_of_hasFDerivAt`, `HasFDerivAt.hasDirDerivAt`: chain rule for one-sided
+  directional derivatives along a curve; Fréchet differentiable functions are directionally
+  differentiable.
 * `HasDirDerivAt.isBouligandDiffAt`, `IsPC1At.exists_isBouligandDiffAt`: in finite dimensions, a
   locally Lipschitz, directionally differentiable function is Bouligand differentiable
   [Dempe 2002, p. 82]; in particular `PC¹` functions are.
@@ -441,6 +444,39 @@ theorem IsPC1At.exists_isBouligandDiffAt [FiniteDimensional ℝ E] {z : E → F}
   choose z' hz' using h.exists_tendsto_slope
   obtain ⟨K, U, hU, hL⟩ := h.exists_lipschitzOnWith
   exact ⟨z', HasDirDerivAt.isBouligandDiffAt hz' hU hL⟩
+
+/-- Chain rule for one-sided directional derivatives along a curve: if `(p(t) - p₀) / t → v` as
+`t → 0⁺` and `u` is differentiable at `p₀`, then `(u(p(t)) - u(p₀)) / t → u'(v)`. -/
+theorem tendsto_slope_comp_of_hasFDerivAt {X Y : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
+    [NormedAddCommGroup Y] [NormedSpace ℝ Y] {u : X → Y} {u' : X →L[ℝ] Y} {p₀ : X}
+    (hu : HasFDerivAt u u' p₀) {p : ℝ → X} {v : X} (hp : Tendsto p (𝓝[>] 0) (𝓝 p₀))
+    (hv : Tendsto (fun t ↦ t⁻¹ • (p t - p₀)) (𝓝[>] 0) (𝓝 v)) :
+    Tendsto (fun t ↦ t⁻¹ • (u (p t) - u p₀)) (𝓝[>] 0) (𝓝 (u' v)) := by
+  have ho : (fun t ↦ u (p t) - u p₀ - u' (p t - p₀)) =o[𝓝[>] 0] fun t ↦ p t - p₀ :=
+    hu.isLittleO.comp_tendsto hp
+  have ho2 : (fun t : ℝ ↦ t⁻¹ • (u (p t) - u p₀ - u' (p t - p₀))) =o[𝓝[>] 0]
+      fun t ↦ t⁻¹ • (p t - p₀) :=
+    (Asymptotics.isBigO_refl (fun t : ℝ ↦ t⁻¹) _).smul_isLittleO ho
+  have h0 := (Asymptotics.isLittleO_one_iff ℝ).1 (ho2.trans_isBigO (hv.isBigO_one ℝ))
+  have h1 := h0.add ((u'.continuous.tendsto v).comp hv)
+  rw [zero_add] at h1
+  refine h1.congr fun t ↦ ?_
+  simp only [Function.comp_apply]
+  rw [map_smul]
+  simp only [smul_sub]
+  abel
+
+/-- A Fréchet differentiable function is directionally differentiable, with `z'(x₀; r) = ∇z(x₀) r`. -/
+theorem HasFDerivAt.hasDirDerivAt {z : E → F} {z' : E →L[ℝ] F} {x₀ : E}
+    (h : HasFDerivAt z z' x₀) : HasDirDerivAt z z' x₀ := fun r ↦ by
+  have hc : Continuous fun t : ℝ ↦ x₀ + t • r := by fun_prop
+  have hp : Tendsto (fun t : ℝ ↦ x₀ + t • r) (𝓝[>] 0) (𝓝 x₀) := by
+    simpa using (hc.tendsto 0).mono_left nhdsWithin_le_nhds
+  have hv : Tendsto (fun t : ℝ ↦ t⁻¹ • ((x₀ + t • r) - x₀)) (𝓝[>] 0) (𝓝 r) :=
+    tendsto_const_nhds.congr' (eventually_nhdsWithin_of_forall fun t (ht : 0 < t) ↦ by
+      show r = t⁻¹ • (x₀ + t • r - x₀)
+      rw [add_sub_cancel_left, smul_smul, inv_mul_cancel₀ ht.ne', one_smul])
+  exact tendsto_slope_comp_of_hasFDerivAt h hp hv
 
 /-- The pointwise maximum of two `C¹` functions is a `PC¹` function [Dempe 2002, p. 78]. -/
 theorem isPC1At_max {f₁ f₂ : E → ℝ} (h₁ : ContDiff ℝ 1 f₁) (h₂ : ContDiff ℝ 1 f₂) (x₀ : E) :
