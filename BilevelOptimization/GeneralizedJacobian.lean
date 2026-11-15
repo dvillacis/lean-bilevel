@@ -14,7 +14,8 @@ Clarke's generalized Jacobian in finite dimensions (Def. 4.7 of [Dempe 2002]),
 (Thm. 4.7, for vector-valued functions as used in the book): `∂z(x̄)` is the convex hull of the
 Jacobians at `x̄` of the strongly active selection functions, those with
 `x̄ ∈ cl int Supp(z, zⁱ)` (4.14). As a consequence we get the first two assertions of Cor. 4.1 for
-the local solution function `y(·)` of the follower's problem under (LICQ) and (SSOC).
+the local solution function `y(·)` of the follower's problem under (LICQ) and (SSOC). Finally,
+`PC¹` functions are semismooth (Def. 4.8, Thm. 4.8).
 
 ## Main results
 
@@ -31,13 +32,18 @@ the local solution function `y(·)` of the follower's problem under (LICQ) and (
 * `IsPC1Selection.bouligandJacobian_eq`, `IsPC1Selection.clarkeJacobian_eq`: Thm. 4.7.
 * `IsPC1Selection.exists_stronglyActive_eq_of_eqOn`: a linear map agreeing with `z'(x̄; ·)` on a
   nonempty open set of directions is the Jacobian of a strongly active selection function.
+* `IsSemismoothAt`, `IsPC1Selection.tendsto_apply_of_mem_clarkeJacobian`, `IsPC1At.isSemismoothAt`:
+  Def. 4.8 and Thm. 4.8, `PC¹` functions are semismooth, with `Aₖ r → z'(x̄; r)`.
 * `clarkeJacobian_eq_of_lowerSSOC`, `exists_stronglyActive_apply_eq_of_lowerSSOC`: Cor. 4.1 (first
-  two assertions) for the local solution function under (LICQ) and (SSOC).
+  two assertions) for the local solution function under (LICQ) and (SSOC);
+  `isSemismoothAt_of_lowerSSOC`: it is semismooth.
 
 ## Differences from the book
 
 * Thm. 4.7 is proved for vector-valued functions (the book states it for scalar ones and says it
-  applies analogously). The B-subdifferential is described exactly:
+  applies analogously). Likewise semismoothness (Def. 4.8) is defined for vector-valued functions
+  with the generalized Jacobian, which for scalar functions is the book's definition; the book
+  calls a vector function semismooth if its components are. The B-subdifferential is described exactly:
   `{lim ∇z(xₖ)} = {∇zⁱ(x̄) : i ∈ I⁰_z(x̄)}`.
 * Cor. 4.1 is stated under (LICQ) instead of (MFCQ) and (CRCQ), so the selection functions are the
   `y^I(·)` with `J(λ⁰) ⊆ I ⊆ I(x̄, ȳ)` (`LowerAdmissible`). Pseudodifferentiability
@@ -303,6 +309,119 @@ theorem IsPC1Selection.exists_stronglyActive_eq_of_eqOn [Finite ι] [FiniteDimen
     have hr' := LinearMap.mem_ker.1 hr
     simpa [sub_eq_zero] using hr'
 
+/-! ### Semismoothness -/
+
+/-- Semismoothness [Dempe 2002, Def. 4.8], for vector-valued functions with the generalized
+Jacobian: `z` is Lipschitz near `x̄`, and for every `r ≠ 0`, `(Aₖ r)` converges whenever `xₖ → x̄`,
+`xₖ ≠ x̄`, `(xₖ - x̄)/‖xₖ - x̄‖ → r/‖r‖` and `Aₖ ∈ ∂z(xₖ)`. -/
+def IsSemismoothAt (z : E → F) (x₀ : E) : Prop :=
+  (∃ K, ∃ U ∈ 𝓝 x₀, LipschitzOnWith K z U) ∧
+    ∀ r : E, r ≠ 0 → ∀ (x : ℕ → E) (A : ℕ → E →L[ℝ] F), Tendsto x atTop (𝓝 x₀) →
+      (∀ k, x k ≠ x₀) → Tendsto (fun k ↦ ‖x k - x₀‖⁻¹ • (x k - x₀)) atTop (𝓝 (‖r‖⁻¹ • r)) →
+        (∀ k, A k ∈ clarkeJacobian z (x k)) → ∃ v, Tendsto (fun k ↦ A k r) atTop (𝓝 v)
+
+omit [NormedSpace ℝ E] in
+/-- Slopes along a sequence `xₖ → x̄` with directions `(xₖ - x̄)/‖xₖ - x̄‖ → u` converge to `f'(u)`
+for a first-order approximation `f'` that is continuous and positively homogeneous. -/
+theorem tendsto_slope_of_tendsto_approx [NormedSpace ℝ E] {f f' : E → F} {x₀ : E}
+    (hB : Tendsto (fun x ↦ ‖x - x₀‖⁻¹ * ‖f x - f x₀ - f' (x - x₀)‖) (𝓝[≠] x₀) (𝓝 0))
+    (hhom : ∀ c : ℝ, 0 < c → ∀ v, f' (c • v) = c • f' v) (hcont : Continuous f')
+    {x : ℕ → E} (hx : Tendsto x atTop (𝓝[≠] x₀)) {u : E}
+    (hu : Tendsto (fun k ↦ ‖x k - x₀‖⁻¹ • (x k - x₀)) atTop (𝓝 u)) :
+    Tendsto (fun k ↦ ‖x k - x₀‖⁻¹ • (f (x k) - f x₀)) atTop (𝓝 (f' u)) := by
+  have h1 : Tendsto (fun k ↦ ‖x k - x₀‖⁻¹ • (f (x k) - f x₀ - f' (x k - x₀))) atTop (𝓝 0) := by
+    refine squeeze_zero_norm (fun k ↦ le_of_eq ?_) (hB.comp hx)
+    rw [norm_smul, norm_inv, norm_norm]
+    rfl
+  have h2 := (hcont.tendsto u).comp hu
+  have hne : ∀ᶠ k in atTop, x k ≠ x₀ := (tendsto_nhdsWithin_iff.1 hx).2
+  have h3 := h1.add h2
+  rw [zero_add] at h3
+  refine h3.congr' (hne.mono fun k hk ↦ ?_)
+  simp only [Function.comp_apply]
+  rw [hhom _ (inv_pos.2 (norm_pos_iff.2 (sub_ne_zero.2 hk))), ← smul_add, sub_add_cancel]
+
+/-- For a `PC¹` function, `Aₖ r → z'(x̄; r)` whenever `xₖ → x̄`, `xₖ ≠ x̄`,
+`(xₖ - x̄)/‖xₖ - x̄‖ → r/‖r‖` and `Aₖ ∈ ∂z(xₖ)` (the proof of Thm. 4.8 of [Dempe 2002]). -/
+theorem IsPC1Selection.tendsto_apply_of_mem_clarkeJacobian [Finite ι] [FiniteDimensional ℝ E]
+    (h : IsPC1Selection z zs V) {x₀ : E} (hx₀ : x₀ ∈ V) {z' : E → F}
+    (hz' : HasDirDerivAt z z' x₀) {r : E} (hr : r ≠ 0) {x : ℕ → E} {A : ℕ → E →L[ℝ] F}
+    (hx : Tendsto x atTop (𝓝 x₀)) (hne : ∀ k, x k ≠ x₀)
+    (hu : Tendsto (fun k ↦ ‖x k - x₀‖⁻¹ • (x k - x₀)) atTop (𝓝 (‖r‖⁻¹ • r)))
+    (hA : ∀ᶠ k in atTop, A k ∈ clarkeJacobian z (x k)) :
+    Tendsto (fun k ↦ A k r) atTop (𝓝 (z' r)) := by
+  have := Fintype.ofFinite ι
+  obtain ⟨K, U, hU, hL⟩ := h.exists_lipschitzOnWith hx₀
+  have hB := (hz'.isBouligandDiffAt hU hL).2
+  have hcont : Continuous z' := (LipschitzWith.of_dist_le_mul fun a b ↦ by
+    rw [dist_eq_norm, dist_eq_norm]
+    exact hz'.norm_sub_le hU hL a b).continuous
+  have hxne : Tendsto x atTop (𝓝[≠] x₀) := tendsto_nhdsWithin_iff.2 ⟨hx, Eventually.of_forall hne⟩
+  have hrpos : 0 < ‖r‖ := norm_pos_iff.2 hr
+  have hru : ‖r‖ • (‖r‖⁻¹ • r) = r := by rw [smul_smul, mul_inv_cancel₀ hrpos.ne', one_smul]
+  have hq := tendsto_slope_of_tendsto_approx hB (fun c hc v ↦ hz'.map_smul hc v) hcont hxne hu
+  have hxV : ∀ᶠ k in atTop, x k ∈ V := hx.eventually (h.1.mem_nhds hx₀)
+  have hcf : ∀ i, Tendsto (fun k ↦ fderiv ℝ (zs i) (x k)) atTop (𝓝 (fderiv ℝ (zs i) x₀)) :=
+    fun i ↦ (((h.2.2.1 i).continuousOn_fderiv_of_isOpen h.1 le_rfl).continuousAt
+      (h.1.mem_nhds hx₀)).tendsto.comp hx
+  -- a selection function that is strongly active along the sequence has `∇zⁱ(x̄) r = z'(x̄; r)`
+  have hfreq : ∀ i, (∃ᶠ k in atTop, i ∈ stronglyActive z zs (x k)) →
+      z' r = fderiv ℝ (zs i) x₀ r := by
+    intro i hi
+    have hcl : x₀ ∈ closure (closure (interior {w | z w = zs i w})) :=
+      mem_closure_of_frequently_of_tendsto hi hx
+    rw [closure_closure] at hcl
+    have hz₀ : z x₀ = zs i x₀ := h.eq_of_mem_closure hx₀ interior_subset hcl
+    have hzi : HasFDerivAt (zs i) (fderiv ℝ (zs i) x₀) x₀ :=
+      (((h.2.2.1 i).differentiableOn one_ne_zero x₀ hx₀).differentiableAt
+        (h.1.mem_nhds hx₀)).hasFDerivAt
+    have hp := tendsto_slope_of_tendsto_approx
+      ((hasFDerivAt_iff_tendsto.1 hzi).mono_left nhdsWithin_le_nhds)
+      (fun c _ v ↦ map_smul _ c v) (fderiv ℝ (zs i) x₀).continuous hxne hu
+    have hu' : z' (‖r‖⁻¹ • r) = fderiv ℝ (zs i) x₀ (‖r‖⁻¹ • r) :=
+      tendsto_nhds_unique_of_frequently_eq hq hp ((hi.and_eventually hxV).mono fun k hk ↦ by
+        rw [h.eq_of_mem_closure hk.2 interior_subset hk.1, hz₀])
+    calc z' r = z' (‖r‖ • (‖r‖⁻¹ • r)) := by rw [hru]
+      _ = ‖r‖ • z' (‖r‖⁻¹ • r) := hz'.map_smul hrpos _
+      _ = ‖r‖ • fderiv ℝ (zs i) x₀ (‖r‖⁻¹ • r) := by rw [hu']
+      _ = fderiv ℝ (zs i) x₀ r := by rw [← map_smul, hru]
+  -- hence `∇zⁱ(xₖ) r` is eventually close to `z'(x̄; r)` for the strongly active `i`
+  have hclose : ∀ ε > 0, ∀ i, ∀ᶠ k in atTop, i ∈ stronglyActive z zs (x k) →
+      dist (fderiv ℝ (zs i) (x k) r) (z' r) < ε := by
+    intro ε hε i
+    by_contra hnot
+    rw [not_eventually] at hnot
+    have heq := hfreq i (hnot.mono fun k hk ↦ (Classical.not_imp.1 hk).1)
+    have hlim : Tendsto (fun k ↦ fderiv ℝ (zs i) (x k) r) atTop (𝓝 (z' r)) := by
+      rw [heq]
+      exact ((ContinuousLinearMap.apply ℝ F r).continuous.tendsto _).comp (hcf i)
+    obtain ⟨k, hk, hk'⟩ :=
+      (hnot.and_eventually (hlim.eventually (Metric.ball_mem_nhds _ hε))).exists
+    exact (Classical.not_imp.1 hk).2 hk'
+  -- `Aₖ` is a convex combination of the `∇zⁱ(xₖ)`, `i ∈ I⁰_z(xₖ)`
+  rw [Metric.tendsto_nhds]
+  intro ε hε
+  filter_upwards [eventually_all.2 (hclose ε hε), hA, hxV] with k hk hAk hxk
+  rw [h.clarkeJacobian_eq hxk] at hAk
+  have hconv : Convex ℝ ((ContinuousLinearMap.apply ℝ F r).toLinearMap ⁻¹'
+      Metric.ball (z' r) ε) :=
+    (convex_ball (z' r) ε).linear_preimage _
+  have hsub : (fun i ↦ fderiv ℝ (zs i) (x k)) '' stronglyActive z zs (x k) ⊆
+      (ContinuousLinearMap.apply ℝ F r).toLinearMap ⁻¹' Metric.ball (z' r) ε := by
+    rintro _ ⟨i, hi, rfl⟩
+    exact hk i hi
+  exact convexHull_min hsub hconv hAk
+
+/-- **Thm. 4.8 of [Dempe 2002]**: `PC¹` functions are semismooth; the limit of `(Aₖ r)` is the
+directional derivative `z'(x̄; r)`. -/
+theorem IsPC1At.isSemismoothAt [FiniteDimensional ℝ E] {x₀ : E} (hz : IsPC1At z x₀) :
+    IsSemismoothAt z x₀ := by
+  obtain ⟨z', hz'⟩ := hz.exists_isBouligandDiffAt
+  have hL := hz.exists_lipschitzOnWith
+  obtain ⟨n, zs, V, hx₀, h⟩ := hz
+  exact ⟨hL, fun r hr x A hx hne hu hA ↦ ⟨z' r,
+    h.tendsto_apply_of_mem_clarkeJacobian hx₀ hz'.1 hr hx hne hu (Eventually.of_forall hA)⟩⟩
+
 /-! ### The local solution function -/
 
 section Solution
@@ -346,6 +465,17 @@ theorem exists_stronglyActive_apply_eq_of_lowerSSOC (hφ : ContDiff ℝ 2 φ)
     exists_isPC1Selection_of_lowerSSOC hφ hg hkkt hlicq hssoc hU hs₀ hsc hsmin
   obtain ⟨I, hI, he, -⟩ := hV.exists_stronglyActive_apply_eq hx₀V hs' r
   exact ⟨I, hI, he⟩
+
+/-- Thm. 4.8 and 4.10 of [Dempe 2002] together, under (LICQ) and (SSOC): the local solution function
+is semismooth. -/
+theorem isSemismoothAt_of_lowerSSOC (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i))
+    {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ} (hkkt : IsLowerKKT φ g x₀ y₀ lam₀)
+    (hlicq : LowerLICQ g x₀ y₀) (hssoc : LowerSSOC φ g x₀ y₀) {s : E → F} {U : Set E}
+    (hU : U ∈ 𝓝 x₀) (hs₀ : s x₀ = y₀) (hsc : ContinuousOn s U)
+    (hsmin : ∀ x ∈ U, s x ∈ lowerFeasible g x ∧
+      IsLocalMinOn (fun z ↦ φ (x, z)) (lowerFeasible g x) (s x)) :
+    IsSemismoothAt s x₀ :=
+  (isPC1At_of_lowerSSOC hφ hg hkkt hlicq hssoc hU hs₀ hsc hsmin).isSemismoothAt
 
 end Solution
 
