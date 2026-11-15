@@ -29,6 +29,8 @@ the local solution function `y(·)` of the follower's problem under (LICQ) and (
 * `IsPC1Selection.exists_stronglyActive_fderiv_eq`: at a point of differentiability, `∇z(x)` is
   the Jacobian of a strongly active selection function.
 * `IsPC1Selection.bouligandJacobian_eq`, `IsPC1Selection.clarkeJacobian_eq`: Thm. 4.7.
+* `IsPC1Selection.exists_stronglyActive_eq_of_eqOn`: a linear map agreeing with `z'(x̄; ·)` on a
+  nonempty open set of directions is the Jacobian of a strongly active selection function.
 * `clarkeJacobian_eq_of_lowerSSOC`, `exists_stronglyActive_apply_eq_of_lowerSSOC`: Cor. 4.1 (first
   two assertions) for the local solution function under (LICQ) and (SSOC).
 
@@ -37,8 +39,8 @@ the local solution function `y(·)` of the follower's problem under (LICQ) and (
 * Thm. 4.7 is proved for vector-valued functions (the book states it for scalar ones and says it
   applies analogously). The B-subdifferential is described exactly:
   `{lim ∇z(xₖ)} = {∇zⁱ(x̄) : i ∈ I⁰_z(x̄)}`.
-* Cor. 4.1 is stated under (LICQ) instead of (MFCQ) and (CRCQ); its selection functions are all
-  `y^I(·)`, `I ⊆ ι`, those not satisfying (C1), (C2) being constant. Pseudodifferentiability
+* Cor. 4.1 is stated under (LICQ) instead of (MFCQ) and (CRCQ), so the selection functions are the
+  `y^I(·)` with `J(λ⁰) ⊆ I ⊆ I(x̄, ȳ)` (`LowerAdmissible`). Pseudodifferentiability
   (Def. 4.11, Thm. 4.9) is not formalized. The Lipschitz and B-differentiability assertions are
   `IsPC1At.exists_lipschitzOnWith` and `IsPC1At.exists_isBouligandDiffAt`.
 -/
@@ -270,6 +272,37 @@ theorem IsPC1Selection.clarkeJacobian_eq [Finite ι] [FiniteDimensional ℝ E]
       convexHull ℝ ((fun i ↦ fderiv ℝ (zs i) x₀) '' stronglyActive z zs x₀) := by
   rw [clarkeJacobian, h.bouligandJacobian_eq hx₀]
 
+/-- If the directional derivative of a `PC¹` function agrees with a linear map `A` on a nonempty
+open set of directions, then `A` is the Jacobian of a strongly active selection function. -/
+theorem IsPC1Selection.exists_stronglyActive_eq_of_eqOn [Finite ι] [FiniteDimensional ℝ E]
+    (h : IsPC1Selection z zs V) {x₀ : E} (hx₀ : x₀ ∈ V) {z' : E → F}
+    (hz' : HasDirDerivAt z z' x₀) {O : Set E} (hO : IsOpen O) (hne : O.Nonempty)
+    {A : E →L[ℝ] F} (hA : ∀ r ∈ O, z' r = A r) :
+    ∃ i ∈ stronglyActive z zs x₀, A = fderiv ℝ (zs i) x₀ := by
+  have := FiniteDimensional.complete ℝ E
+  let f : Option (stronglyActive z zs x₀) → Set E := fun j ↦ match j with
+    | none => Oᶜ
+    | some i => ((A - fderiv ℝ (zs i.1) x₀).ker : Set E)
+  have hc : ∀ j, IsClosed (f j) := by
+    rintro (_ | i)
+    exacts [hO.isClosed_compl, ContinuousLinearMap.isClosed_ker _]
+  have hU : ⋃ j, f j = univ := by
+    refine eq_univ_of_forall fun r ↦ mem_iUnion.2 ?_
+    by_cases hr : r ∈ O
+    · obtain ⟨i, hi, he, -⟩ := h.exists_stronglyActive_apply_eq hx₀ hz' r
+      refine ⟨some ⟨i, hi⟩, LinearMap.mem_ker.2 ?_⟩
+      simp [← hA r hr, he]
+    · exact ⟨none, hr⟩
+  obtain ⟨w, hwO, hw⟩ := (dense_iUnion_interior_of_closed hc hU).inter_open_nonempty O hO hne
+  obtain ⟨j, hj⟩ := mem_iUnion.1 hw
+  rcases j with _ | i
+  · exact absurd hwO (interior_subset hj)
+  · have htop := Submodule.eq_top_of_nonempty_interior' _ ⟨w, hj⟩
+    refine ⟨i.1, i.2, ContinuousLinearMap.ext fun r ↦ ?_⟩
+    have hr : r ∈ (A - fderiv ℝ (zs i.1) x₀).ker := htop ▸ Submodule.mem_top
+    have hr' := LinearMap.mem_ker.1 hr
+    simpa [sub_eq_zero] using hr'
+
 /-! ### The local solution function -/
 
 section Solution
@@ -287,8 +320,10 @@ theorem clarkeJacobian_eq_of_lowerSSOC (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, Co
     (hsmin : ∀ x ∈ U, s x ∈ lowerFeasible g x ∧
       IsLocalMinOn (fun z ↦ φ (x, z)) (lowerFeasible g x) (s x)) :
     clarkeJacobian s x₀ = convexHull ℝ
-      ((fun I ↦ fderiv ℝ (lowerSolutionSelection φ g x₀ y₀ lam₀ I) x₀) ''
-        stronglyActive s (lowerSolutionSelection φ g x₀ y₀ lam₀) x₀) := by
+      ((fun I : {I // LowerAdmissible g x₀ y₀ lam₀ I} ↦
+          fderiv ℝ (lowerSolutionSelection φ g x₀ y₀ lam₀ I) x₀) ''
+        stronglyActive s (fun I : {I // LowerAdmissible g x₀ y₀ lam₀ I} ↦
+          lowerSolutionSelection φ g x₀ y₀ lam₀ I) x₀) := by
   obtain ⟨V, hx₀V, hV⟩ :=
     exists_isPC1Selection_of_lowerSSOC hφ hg hkkt hlicq hssoc hU hs₀ hsc hsmin
   exact hV.clarkeJacobian_eq hx₀V
@@ -304,7 +339,8 @@ theorem exists_stronglyActive_apply_eq_of_lowerSSOC (hφ : ContDiff ℝ 2 φ)
     (hsmin : ∀ x ∈ U, s x ∈ lowerFeasible g x ∧
       IsLocalMinOn (fun z ↦ φ (x, z)) (lowerFeasible g x) (s x))
     {s' : E → F} (hs' : HasDirDerivAt s s' x₀) (r : E) :
-    ∃ I ∈ stronglyActive s (lowerSolutionSelection φ g x₀ y₀ lam₀) x₀,
+    ∃ I ∈ stronglyActive s (fun I : {I // LowerAdmissible g x₀ y₀ lam₀ I} ↦
+        lowerSolutionSelection φ g x₀ y₀ lam₀ I) x₀,
       s' r = fderiv ℝ (lowerSolutionSelection φ g x₀ y₀ lam₀ I) x₀ r := by
   obtain ⟨V, hx₀V, hV⟩ :=
     exists_isPC1Selection_of_lowerSSOC hφ hg hkkt hlicq hssoc hU hs₀ hsc hsmin

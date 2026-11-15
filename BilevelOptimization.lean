@@ -12,6 +12,7 @@ import BilevelOptimization.MPCC
 import BilevelOptimization.Parametric
 import BilevelOptimization.PiecewiseSmooth
 import BilevelOptimization.PiecewiseSolution
+import BilevelOptimization.SolutionJacobian
 import BilevelOptimization.StrongStability
 import BilevelOptimization.StrongStabilityOptimality
 import BilevelOptimization.UpperLipschitzSolution

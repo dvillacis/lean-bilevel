@@ -23,16 +23,21 @@ solution of the quadratic program `QP(λ⁰, r)` (4.20).
   function theorem.
 * `eventually_exists_lowerSelection`: near `x̄`, `y(x)` and its multiplier are the value of one of
   these selection functions.
-* `isPC1At_of_lowerSSOC`, `exists_isPC1At_of_lowerSSOC`: Thm. 4.10.
+* `exists_isPC1Selection_of_lowerSSOC`, `isPC1At_of_lowerSSOC`, `exists_isPC1At_of_lowerSSOC`:
+  Thm. 4.10, with the local solution functions `y^I(·)` (`lowerSolutionSelection`) of the
+  admissible index sets (`LowerAdmissible`) as selections.
 * `lowerQPObjective`, `lowerQPFeasible`, `hasDirDerivAt_of_lowerSSOC`: Thm. 4.11.
+* `LowerQPSystem`, `lowerQPObjective_le_of_lowerQPSystem`, `eq_of_lowerQPSystem`: the systems
+  `KKT(r, K, λ⁰)` of p. 94; their solutions solve `QP(λ⁰, r)`, so `d = y'(x̄; r)`.
 
 ## Differences from the book
 
 * The book assumes (MFCQ) and (CRCQ) and refers to [235] for the proofs. We assume (LICQ), as in
   our version of Thm. 4.4 (`isLowerStronglyStable`). Under (LICQ), (CRCQ) holds automatically, the
   multiplier `λ⁰` is unique, and the auxiliary problem (4.21) is trivial.
-* The selection functions are indexed by all index sets `I` (those that do not satisfy (C1)–(C2)
-  get a constant function), and the multiplier is part of the selection.
+* `lowerSelection` is defined for all index sets `I` (those that do not satisfy (C1)–(C2) get a
+  constant function), and the multiplier is part of the selection; the `PC¹` representation uses
+  only the admissible ones.
 * The data are `C²` on `E × F` and there are no equality constraints.
 -/
 
@@ -114,6 +119,87 @@ theorem nonpos_of_tendsto_of_frequently {f : ℝ → ℝ} {a : ℝ} (hf : Tendst
     (h : ∃ᶠ t in 𝓝[>] 0, f t ≤ 0) : a ≤ 0 := by
   by_contra ha
   obtain ⟨t, ht, ht'⟩ := (h.and_eventually (hf.eventually (lt_mem_nhds (not_le.1 ha)))).exists
+  linarith
+
+/-! ### The systems `KKT(r, K, λ⁰)` -/
+
+/-- Admissible index sets `J(λ⁰) ⊆ I ⊆ I(x̄, ȳ)` for the problems (4.19); under (LICQ) condition (C2)
+of [Dempe 2002, p. 86] holds automatically, so these are the sets of `𝓘(λ⁰)`. -/
+def LowerAdmissible (g : ι → E × F → ℝ) (x₀ : E) (y₀ : F) (lam₀ : ι → ℝ) (I : Finset ι) : Prop :=
+  (∀ i, 0 < lam₀ i → i ∈ I) ∧ ∀ i ∈ I, g i (x₀, y₀) = 0
+
+variable (φ g) in
+/-- The system `KKT(r, K, λ⁰)` of [Dempe 2002, p. 94], also the linear system of the problem
+defining `v_α(λ⁰, K)` in (5.12) (without the rows involving `α`): the KKT conditions of
+`QP(λ⁰, r)` (4.20) with the constraints in `K` active,
+`∇²_yx L r + ∇²_yy L d + ∑ γᵢ ∇_y gᵢ = 0`, `∇gᵢ(x̄, ȳ)(r, d) = 0` for `i ∈ K`,
+`∇gᵢ(x̄, ȳ)(r, d) ≤ 0` for active `i ∉ K`, `γᵢ ≥ 0` for `i ∈ K \ J(λ⁰)` and `γᵢ = 0` for
+`i ∉ K`. -/
+def LowerQPSystem (x₀ : E) (y₀ : F) (lam₀ : ι → ℝ) (K : Finset ι) (r : E) (d : F)
+    (γ : ι → ℝ) : Prop :=
+  lowerMixedHessian φ g x₀ y₀ lam₀ r + lowerHessian φ g x₀ y₀ lam₀ d +
+      ∑ i, γ i • fderiv ℝ (fun z ↦ g i (x₀, z)) y₀ = 0 ∧
+    (∀ i ∈ K, fderiv ℝ (g i) (x₀, y₀) (r, d) = 0) ∧
+    (∀ i ∉ K, g i (x₀, y₀) = 0 → fderiv ℝ (g i) (x₀, y₀) (r, d) ≤ 0) ∧
+    (∀ i ∈ K, ¬ 0 < lam₀ i → 0 ≤ γ i) ∧ (∀ i ∉ K, γ i = 0)
+
+theorem mem_lowerQPFeasible_of_lowerQPSystem {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ} {K : Finset ι}
+    {r : E} {d : F} {γ : ι → ℝ} (hJK : ∀ i, 0 < lam₀ i → i ∈ K)
+    (hsys : LowerQPSystem φ g x₀ y₀ lam₀ K r d γ) : d ∈ lowerQPFeasible g x₀ y₀ lam₀ r := by
+  refine ⟨fun i hi ↦ hsys.2.1 i (hJK i hi), fun i hi ↦ ?_⟩
+  by_cases hiK : i ∈ K
+  · exact (hsys.2.1 i hiK).le
+  · exact hsys.2.2.1 i hiK hi
+
+/-- A solution of the system of (5.12) minimizes `QP(λ⁰, r)`. -/
+theorem lowerQPObjective_le_of_lowerQPSystem (hφ : ContDiff ℝ 2 φ)
+    (hg : ∀ i, ContDiff ℝ 2 (g i)) {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ}
+    (hkkt : IsLowerKKT φ g x₀ y₀ lam₀) (hssoc : LowerSSOC φ g x₀ y₀) {K : Finset ι} {r : E}
+    {d : F} {γ : ι → ℝ} (hJK : ∀ i, 0 < lam₀ i → i ∈ K) (hKI : ∀ i ∈ K, g i (x₀, y₀) = 0)
+    (hsys : LowerQPSystem φ g x₀ y₀ lam₀ K r d γ) :
+    ∀ d' ∈ lowerQPFeasible g x₀ y₀ lam₀ r,
+      lowerQPObjective φ g x₀ y₀ lam₀ r d ≤ lowerQPObjective φ g x₀ y₀ lam₀ r d' := by
+  intro d' hd'
+  have hgd : ∀ i, DifferentiableAt ℝ (g i) (x₀, y₀) := fun i ↦
+    (hg i).differentiable (by norm_num) _
+  set e := d' - d with he
+  have hsub : ∀ i, fderiv ℝ (fun z ↦ g i (x₀, z)) y₀ e =
+      fderiv ℝ (g i) (x₀, y₀) (r, d') - fderiv ℝ (g i) (x₀, y₀) (r, d) := fun i ↦ by
+    rw [he, ← fderiv_apply_sub_section (hgd i), map_sub]
+  have hlin : ∑ i, γ i * fderiv ℝ (fun z ↦ g i (x₀, z)) y₀ e ≤ 0 := by
+    refine Finset.sum_nonpos fun i _ ↦ ?_
+    by_cases hiK : i ∈ K
+    · rw [hsub, hsys.2.1 i hiK, sub_zero]
+      by_cases hi : 0 < lam₀ i
+      · rw [hd'.1 i hi, mul_zero]
+      · exact mul_nonpos_of_nonneg_of_nonpos (hsys.2.2.2.1 i hiK hi) (hd'.2 i (hKI i hiK))
+    · rw [hsys.2.2.2.2 i hiK, zero_mul]
+  have hquad : 0 ≤ lowerHessian φ g x₀ y₀ lam₀ e e := by
+    by_cases he0 : e = 0
+    · simp [he0]
+    · refine (hssoc lam₀ hkkt e he0 fun i hi ↦ ?_).le
+      rw [hsub, hd'.1 i hi, hsys.2.1 i (hJK i hi), sub_zero]
+  have h0 := congrArg (fun ℓ : StrongDual ℝ F ↦ ℓ e) hsys.1
+  simp only [add_apply, sum_apply, smul_apply, smul_eq_mul, zero_apply] at h0
+  have hd'e : d' = d + e := by rw [he, add_sub_cancel]
+  unfold lowerQPObjective
+  rw [hd'e]
+  simp only [map_add, add_apply]
+  rw [lowerHessian_symm hφ hg _ _ _ e d]
+  linarith
+
+/-- Under (SSOC), the system of (5.12) determines `d` as the unique solution of `QP(λ⁰, r)`. -/
+theorem eq_of_lowerQPSystem (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i)) {x₀ : E}
+    {y₀ : F} {lam₀ : ι → ℝ} (hkkt : IsLowerKKT φ g x₀ y₀ lam₀) (hssoc : LowerSSOC φ g x₀ y₀)
+    {K : Finset ι} {r : E} {d d₀ : F} {γ : ι → ℝ} (hJK : ∀ i, 0 < lam₀ i → i ∈ K)
+    (hKI : ∀ i ∈ K, g i (x₀, y₀) = 0) (hsys : LowerQPSystem φ g x₀ y₀ lam₀ K r d γ)
+    (hd₀ : d₀ ∈ lowerQPFeasible g x₀ y₀ lam₀ r ∧
+      ∀ d ∈ lowerQPFeasible g x₀ y₀ lam₀ r, d ≠ d₀ →
+        lowerQPObjective φ g x₀ y₀ lam₀ r d₀ < lowerQPObjective φ g x₀ y₀ lam₀ r d) :
+    d = d₀ := by
+  by_contra hne
+  have h1 := hd₀.2 d (mem_lowerQPFeasible_of_lowerQPSystem hJK hsys) hne
+  have h2 := lowerQPObjective_le_of_lowerQPSystem hφ hg hkkt hssoc hJK hKI hsys d₀ hd₀.1
   linarith
 
 variable [DecidableEq ι]
@@ -393,24 +479,26 @@ theorem eventually_exists_lowerSelection (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, 
 
 /-- **Thm. 4.10 of [Dempe 2002]** (Ralph–Dempe) under (LICQ), with explicit selections: a
 continuous local solution function `y(·)` through a KKT point `ȳ` with (LICQ) and (SSOC) is a
-continuous selection of the local solution functions `y^I(·)` of the problems (4.19) on an open
-neighborhood of `x̄`. -/
+continuous selection of the local solution functions `y^I(·)` of the problems (4.19), `I` admissible,
+on an open neighborhood of `x̄`. -/
 theorem exists_isPC1Selection_of_lowerSSOC (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i))
     {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ} (hkkt : IsLowerKKT φ g x₀ y₀ lam₀)
     (hlicq : LowerLICQ g x₀ y₀) (hssoc : LowerSSOC φ g x₀ y₀) {s : E → F} {U : Set E}
     (hU : U ∈ 𝓝 x₀) (hs₀ : s x₀ = y₀) (hsc : ContinuousOn s U)
     (hsmin : ∀ x ∈ U, s x ∈ lowerFeasible g x ∧
       IsLocalMinOn (fun z ↦ φ (x, z)) (lowerFeasible g x) (s x)) :
-    ∃ V, x₀ ∈ V ∧ IsPC1Selection s (lowerSolutionSelection φ g x₀ y₀ lam₀) V := by
+    ∃ V, x₀ ∈ V ∧ IsPC1Selection s
+      (fun I : {I // LowerAdmissible g x₀ y₀ lam₀ I} ↦ lowerSolutionSelection φ g x₀ y₀ lam₀ I) V := by
   have hsel := eventually_exists_lowerSelection hφ hg hkkt hlicq hssoc (hsc.continuousAt hU) hs₀
     (Filter.mem_of_superset hU hsmin)
   set zs : Finset ι → E → F := lowerSolutionSelection φ g x₀ y₀ lam₀ with hzs
   have hcd : ∀ I, ∀ᶠ x in 𝓝 x₀, ContDiffAt ℝ 1 (zs I) x := fun I ↦
     (contDiffAt_fst.comp x₀ (contDiffAt_lowerSelection x₀ y₀ lam₀ I)).eventually (by simp)
-  set V : Set E := interior {x | x ∈ U ∧ (∀ I, ContDiffAt ℝ 1 (zs I) x) ∧ ∃ I, s x = zs I x}
+  set V : Set E := interior {x | x ∈ U ∧ (∀ I, ContDiffAt ℝ 1 (zs I) x) ∧
+    ∃ I : {I // LowerAdmissible g x₀ y₀ lam₀ I}, s x = zs I x}
   have hx₀V : x₀ ∈ V := mem_interior_iff_mem_nhds.2 (inter_mem hU ((eventually_all.2 hcd).and
-    (hsel.mono fun x ⟨I, _, _, lam, _, he⟩ ↦
-      ⟨I, by simp only [hzs, lowerSolutionSelection, he]⟩)))
+    (hsel.mono fun x ⟨I, hJ, hIA, lam, _, he⟩ ↦
+      ⟨⟨I, hJ, hIA⟩, by simp only [hzs, lowerSolutionSelection, he]⟩)))
   exact ⟨V, hx₀V, isOpen_interior, hsc.mono fun x hx ↦ (interior_subset hx).1,
     fun I x hx ↦ ((interior_subset hx).2.1 I).contDiffWithinAt, fun x hx ↦ (interior_subset hx).2.2⟩
 
@@ -426,7 +514,8 @@ theorem isPC1At_of_lowerSSOC (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ
     IsPC1At s x₀ := by
   obtain ⟨V, hx₀V, hV⟩ :=
     exists_isPC1Selection_of_lowerSSOC hφ hg hkkt hlicq hssoc hU hs₀ hsc hsmin
-  set e := Fintype.equivFin (Finset ι)
+  have : Fintype {I // LowerAdmissible g x₀ y₀ lam₀ I} := Fintype.ofFinite _
+  set e := Fintype.equivFin {I // LowerAdmissible g x₀ y₀ lam₀ I}
   refine ⟨_, fun k ↦ lowerSolutionSelection φ g x₀ y₀ lam₀ (e.symm k), V, hx₀V, hV.1, hV.2.1,
     fun k ↦ hV.2.2.1 _, fun x hx ↦ ?_⟩
   obtain ⟨I, hI⟩ := hV.2.2.2 x hx
