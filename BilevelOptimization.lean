@@ -1,4 +1,5 @@
 import BilevelOptimization.Basic
+import BilevelOptimization.GeneralizedJacobian
 import BilevelOptimization.KKT
 import BilevelOptimization.KKTLocal
 import BilevelOptimization.KKTOptimality

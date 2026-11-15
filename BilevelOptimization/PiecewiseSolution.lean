@@ -265,6 +265,12 @@ noncomputable def lowerSelection (φ : E × F → ℝ) (g : ι → E × F → �
     h.1.implicitFunction one_ne_zero h.2
   else fun _ ↦ (y₀, lam₀)
 
+/-- The local solution function `x ↦ y^I(x)` of the problem (4.19) with index set `I`: the first
+component of `lowerSelection`. -/
+noncomputable def lowerSolutionSelection (φ : E × F → ℝ) (g : ι → E × F → ℝ) (x₀ : E) (y₀ : F)
+    (lam₀ : ι → ℝ) (I : Finset ι) (x : E) : F :=
+  (lowerSelection φ g x₀ y₀ lam₀ I x).1
+
 theorem contDiffAt_lowerSelection (x₀ : E) (y₀ : F) (lam₀ : ι → ℝ) (I : Finset ι) :
     ContDiffAt ℝ 1 (lowerSelection φ g x₀ y₀ lam₀ I) x₀ := by
   unfold lowerSelection
@@ -385,6 +391,29 @@ theorem eventually_exists_lowerSelection (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, 
   obtain ⟨I, hJ, hIA, he⟩ := hsel x (s x) lam hxδ hsδ hlam
   exact ⟨I, hJ, hIA, lam, hlam, he⟩
 
+/-- **Thm. 4.10 of [Dempe 2002]** (Ralph–Dempe) under (LICQ), with explicit selections: a
+continuous local solution function `y(·)` through a KKT point `ȳ` with (LICQ) and (SSOC) is a
+continuous selection of the local solution functions `y^I(·)` of the problems (4.19) on an open
+neighborhood of `x̄`. -/
+theorem exists_isPC1Selection_of_lowerSSOC (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i))
+    {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ} (hkkt : IsLowerKKT φ g x₀ y₀ lam₀)
+    (hlicq : LowerLICQ g x₀ y₀) (hssoc : LowerSSOC φ g x₀ y₀) {s : E → F} {U : Set E}
+    (hU : U ∈ 𝓝 x₀) (hs₀ : s x₀ = y₀) (hsc : ContinuousOn s U)
+    (hsmin : ∀ x ∈ U, s x ∈ lowerFeasible g x ∧
+      IsLocalMinOn (fun z ↦ φ (x, z)) (lowerFeasible g x) (s x)) :
+    ∃ V, x₀ ∈ V ∧ IsPC1Selection s (lowerSolutionSelection φ g x₀ y₀ lam₀) V := by
+  have hsel := eventually_exists_lowerSelection hφ hg hkkt hlicq hssoc (hsc.continuousAt hU) hs₀
+    (Filter.mem_of_superset hU hsmin)
+  set zs : Finset ι → E → F := lowerSolutionSelection φ g x₀ y₀ lam₀ with hzs
+  have hcd : ∀ I, ∀ᶠ x in 𝓝 x₀, ContDiffAt ℝ 1 (zs I) x := fun I ↦
+    (contDiffAt_fst.comp x₀ (contDiffAt_lowerSelection x₀ y₀ lam₀ I)).eventually (by simp)
+  set V : Set E := interior {x | x ∈ U ∧ (∀ I, ContDiffAt ℝ 1 (zs I) x) ∧ ∃ I, s x = zs I x}
+  have hx₀V : x₀ ∈ V := mem_interior_iff_mem_nhds.2 (inter_mem hU ((eventually_all.2 hcd).and
+    (hsel.mono fun x ⟨I, _, _, lam, _, he⟩ ↦
+      ⟨I, by simp only [hzs, lowerSolutionSelection, he]⟩)))
+  exact ⟨V, hx₀V, isOpen_interior, hsc.mono fun x hx ↦ (interior_subset hx).1,
+    fun I x hx ↦ ((interior_subset hx).2.1 I).contDiffWithinAt, fun x hx ↦ (interior_subset hx).2.2⟩
+
 /-- **Thm. 4.10 of [Dempe 2002]** (Ralph–Dempe) under (LICQ): a continuous local solution
 function `y(·)` through a KKT point `ȳ` with (LICQ) and (SSOC) is `PC¹` at `x̄`, with the local
 solution functions of the problems (4.19) as selection functions. -/
@@ -395,19 +424,12 @@ theorem isPC1At_of_lowerSSOC (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ
     (hsmin : ∀ x ∈ U, s x ∈ lowerFeasible g x ∧
       IsLocalMinOn (fun z ↦ φ (x, z)) (lowerFeasible g x) (s x)) :
     IsPC1At s x₀ := by
-  have hsel := eventually_exists_lowerSelection hφ hg hkkt hlicq hssoc (hsc.continuousAt hU) hs₀
-    (Filter.mem_of_superset hU hsmin)
-  set zs : Finset ι → E → F := fun I x ↦ (lowerSelection φ g x₀ y₀ lam₀ I x).1 with hzs
-  have hcd : ∀ I, ∀ᶠ x in 𝓝 x₀, ContDiffAt ℝ 1 (zs I) x := fun I ↦
-    (contDiffAt_fst.comp x₀ (contDiffAt_lowerSelection x₀ y₀ lam₀ I)).eventually (by simp)
-  set V : Set E := interior {x | x ∈ U ∧ (∀ I, ContDiffAt ℝ 1 (zs I) x) ∧ ∃ I, s x = zs I x}
-  have hx₀V : x₀ ∈ V := mem_interior_iff_mem_nhds.2 (inter_mem hU ((eventually_all.2 hcd).and
-    (hsel.mono fun x ⟨I, _, _, lam, _, he⟩ ↦ ⟨I, by simp only [hzs, he]⟩)))
+  obtain ⟨V, hx₀V, hV⟩ :=
+    exists_isPC1Selection_of_lowerSSOC hφ hg hkkt hlicq hssoc hU hs₀ hsc hsmin
   set e := Fintype.equivFin (Finset ι)
-  refine ⟨_, fun k ↦ zs (e.symm k), V, hx₀V, isOpen_interior,
-    hsc.mono fun x hx ↦ (interior_subset hx).1,
-    fun k x hx ↦ ((interior_subset hx).2.1 _).contDiffWithinAt, fun x hx ↦ ?_⟩
-  obtain ⟨I, hI⟩ := (interior_subset hx).2.2
+  refine ⟨_, fun k ↦ lowerSolutionSelection φ g x₀ y₀ lam₀ (e.symm k), V, hx₀V, hV.1, hV.2.1,
+    fun k ↦ hV.2.2.1 _, fun x hx ↦ ?_⟩
+  obtain ⟨I, hI⟩ := hV.2.2.2 x hx
   exact ⟨e I, by simp [hI]⟩
 
 /-- Thm. 4.4 and 4.10 of [Dempe 2002] together: under (LICQ) and (SSOC) the strongly stable local

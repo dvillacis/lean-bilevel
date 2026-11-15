@@ -17,8 +17,6 @@ direction (5.11).
 
 ## Main results
 
-* `tendsto_slope_comp_of_hasFDerivAt`: chain rule for one-sided directional derivatives along a
-  curve.
 * `exists_solutionFunction_of_isConvexLower`: for a convex follower's problem with (LICQ) and
   (SSOC), `Ψ(x) = {y(x)}` near `x̄`, with `y(·)` `PC¹` and directionally differentiable, the
   derivative being the unique solution of `QP(λ⁰, r)` (4.20).
@@ -48,27 +46,6 @@ open Filter Topology Set
 open VariationalAnalysis (lowerFeasible)
 
 namespace Bilevel
-
-/-- Chain rule for one-sided directional derivatives along a curve: if `(p(t) - p₀) / t → v` as
-`t → 0⁺` and `u` is differentiable at `p₀`, then `(u(p(t)) - u(p₀)) / t → u'(v)`. -/
-theorem tendsto_slope_comp_of_hasFDerivAt {X Y : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
-    [NormedAddCommGroup Y] [NormedSpace ℝ Y] {u : X → Y} {u' : X →L[ℝ] Y} {p₀ : X}
-    (hu : HasFDerivAt u u' p₀) {p : ℝ → X} {v : X} (hp : Tendsto p (𝓝[>] 0) (𝓝 p₀))
-    (hv : Tendsto (fun t ↦ t⁻¹ • (p t - p₀)) (𝓝[>] 0) (𝓝 v)) :
-    Tendsto (fun t ↦ t⁻¹ • (u (p t) - u p₀)) (𝓝[>] 0) (𝓝 (u' v)) := by
-  have ho : (fun t ↦ u (p t) - u p₀ - u' (p t - p₀)) =o[𝓝[>] 0] fun t ↦ p t - p₀ :=
-    hu.isLittleO.comp_tendsto hp
-  have ho2 : (fun t : ℝ ↦ t⁻¹ • (u (p t) - u p₀ - u' (p t - p₀))) =o[𝓝[>] 0]
-      fun t ↦ t⁻¹ • (p t - p₀) :=
-    (Asymptotics.isBigO_refl (fun t : ℝ ↦ t⁻¹) _).smul_isLittleO ho
-  have h0 := (Asymptotics.isLittleO_one_iff ℝ).1 (ho2.trans_isBigO (hv.isBigO_one ℝ))
-  have h1 := h0.add ((u'.continuous.tendsto v).comp hv)
-  rw [zero_add] at h1
-  refine h1.congr fun t ↦ ?_
-  simp only [Function.comp_apply]
-  rw [map_smul]
-  simp only [smul_sub]
-  abel
 
 variable {E F ι κ : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F] [Fintype ι] [Fintype κ]
