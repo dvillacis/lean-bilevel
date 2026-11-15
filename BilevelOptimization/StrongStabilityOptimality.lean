@@ -21,8 +21,8 @@ direction (5.11).
   (SSOC), `Ψ(x) = {y(x)}` near `x̄`, with `y(·)` `PC¹` and directionally differentiable, the
   derivative being the unique solution of `QP(λ⁰, r)` (4.20).
 * `nonneg_fderiv_of_isLocalMinOn_bilevelFeasible`: Thm. 5.4, conditions (5.10) and (5.11).
-* `LowerQPSystem`, `eq_of_lowerQPSystem`: the linear system of (5.12) is the KKT system of
-  `QP(λ⁰, r)` with the constraints in `K` active, and determines `d = y'(x̄; r)`.
+* `LowerQPSystem`, `eq_of_lowerQPSystem` (in `PiecewiseSolution.lean`): the linear system of (5.12)
+  is the system `KKT(r, K, λ⁰)` of p. 94, and determines `d = y'(x̄; r)`.
 * `nonneg_of_lowerQPSystem_of_isLocalMinOn_bilevelFeasible`: the combinatorial form (5.12).
 * `solutionMap_example`, `hasDerivAt_example`, `not_isLocalMinOn_example`: the example on p. 138,
   showing that the conditions are not sufficient.
@@ -207,82 +207,6 @@ theorem nonneg_fderiv_of_isLocalMinOn_bilevelFeasible {x₀ : E} {y₀ : F} {lam
 /-! ### The combinatorial form (5.12) -/
 
 section Combinatorial
-
-variable (φ g) in
-/-- The linear system of the problem defining `v_α(λ⁰, K)` in (5.12) of [Dempe 2002] (without the
-rows involving `α`): the KKT conditions of `QP(λ⁰, r)` (4.20) with the constraints in `K` active,
-`∇²_yx L r + ∇²_yy L d + ∑ γᵢ ∇_y gᵢ = 0`, `∇gᵢ(x̄, ȳ)(r, d) = 0` for `i ∈ K`,
-`∇gᵢ(x̄, ȳ)(r, d) ≤ 0` for active `i ∉ K`, `γᵢ ≥ 0` for `i ∈ K \ J(λ⁰)` and `γᵢ = 0` for
-`i ∉ K`. -/
-def LowerQPSystem (x₀ : E) (y₀ : F) (lam₀ : ι → ℝ) (K : Finset ι) (r : E) (d : F)
-    (γ : ι → ℝ) : Prop :=
-  lowerMixedHessian φ g x₀ y₀ lam₀ r + lowerHessian φ g x₀ y₀ lam₀ d +
-      ∑ i, γ i • fderiv ℝ (fun z ↦ g i (x₀, z)) y₀ = 0 ∧
-    (∀ i ∈ K, fderiv ℝ (g i) (x₀, y₀) (r, d) = 0) ∧
-    (∀ i ∉ K, g i (x₀, y₀) = 0 → fderiv ℝ (g i) (x₀, y₀) (r, d) ≤ 0) ∧
-    (∀ i ∈ K, ¬ 0 < lam₀ i → 0 ≤ γ i) ∧ (∀ i ∉ K, γ i = 0)
-
-omit [DecidableEq ι] [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
-theorem mem_lowerQPFeasible_of_lowerQPSystem {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ} {K : Finset ι}
-    {r : E} {d : F} {γ : ι → ℝ} (hJK : ∀ i, 0 < lam₀ i → i ∈ K)
-    (hsys : LowerQPSystem φ g x₀ y₀ lam₀ K r d γ) : d ∈ lowerQPFeasible g x₀ y₀ lam₀ r := by
-  refine ⟨fun i hi ↦ hsys.2.1 i (hJK i hi), fun i hi ↦ ?_⟩
-  by_cases hiK : i ∈ K
-  · exact (hsys.2.1 i hiK).le
-  · exact hsys.2.2.1 i hiK hi
-
-omit [DecidableEq ι] [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
-/-- A solution of the system of (5.12) minimizes `QP(λ⁰, r)`. -/
-theorem lowerQPObjective_le_of_lowerQPSystem (hφ : ContDiff ℝ 2 φ)
-    (hg : ∀ i, ContDiff ℝ 2 (g i)) {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ}
-    (hkkt : IsLowerKKT φ g x₀ y₀ lam₀) (hssoc : LowerSSOC φ g x₀ y₀) {K : Finset ι} {r : E}
-    {d : F} {γ : ι → ℝ} (hJK : ∀ i, 0 < lam₀ i → i ∈ K) (hKI : ∀ i ∈ K, g i (x₀, y₀) = 0)
-    (hsys : LowerQPSystem φ g x₀ y₀ lam₀ K r d γ) :
-    ∀ d' ∈ lowerQPFeasible g x₀ y₀ lam₀ r,
-      lowerQPObjective φ g x₀ y₀ lam₀ r d ≤ lowerQPObjective φ g x₀ y₀ lam₀ r d' := by
-  intro d' hd'
-  have hgd : ∀ i, DifferentiableAt ℝ (g i) (x₀, y₀) := fun i ↦
-    (hg i).differentiable (by norm_num) _
-  set e := d' - d with he
-  have hsub : ∀ i, fderiv ℝ (fun z ↦ g i (x₀, z)) y₀ e =
-      fderiv ℝ (g i) (x₀, y₀) (r, d') - fderiv ℝ (g i) (x₀, y₀) (r, d) := fun i ↦ by
-    rw [he, ← fderiv_apply_sub_section (hgd i), map_sub]
-  have hlin : ∑ i, γ i * fderiv ℝ (fun z ↦ g i (x₀, z)) y₀ e ≤ 0 := by
-    refine Finset.sum_nonpos fun i _ ↦ ?_
-    by_cases hiK : i ∈ K
-    · rw [hsub, hsys.2.1 i hiK, sub_zero]
-      by_cases hi : 0 < lam₀ i
-      · rw [hd'.1 i hi, mul_zero]
-      · exact mul_nonpos_of_nonneg_of_nonpos (hsys.2.2.2.1 i hiK hi) (hd'.2 i (hKI i hiK))
-    · rw [hsys.2.2.2.2 i hiK, zero_mul]
-  have hquad : 0 ≤ lowerHessian φ g x₀ y₀ lam₀ e e := by
-    by_cases he0 : e = 0
-    · simp [he0]
-    · refine (hssoc lam₀ hkkt e he0 fun i hi ↦ ?_).le
-      rw [hsub, hd'.1 i hi, hsys.2.1 i (hJK i hi), sub_zero]
-  have h0 := congrArg (fun ℓ : StrongDual ℝ F ↦ ℓ e) hsys.1
-  simp only [add_apply, sum_apply, smul_apply, smul_eq_mul, zero_apply] at h0
-  have hd'e : d' = d + e := by rw [he, add_sub_cancel]
-  unfold lowerQPObjective
-  rw [hd'e]
-  simp only [map_add, add_apply]
-  rw [lowerHessian_symm hφ hg _ _ _ e d]
-  linarith
-
-omit [DecidableEq ι] [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
-/-- Under (SSOC), the system of (5.12) determines `d` as the unique solution of `QP(λ⁰, r)`. -/
-theorem eq_of_lowerQPSystem (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i)) {x₀ : E}
-    {y₀ : F} {lam₀ : ι → ℝ} (hkkt : IsLowerKKT φ g x₀ y₀ lam₀) (hssoc : LowerSSOC φ g x₀ y₀)
-    {K : Finset ι} {r : E} {d d₀ : F} {γ : ι → ℝ} (hJK : ∀ i, 0 < lam₀ i → i ∈ K)
-    (hKI : ∀ i ∈ K, g i (x₀, y₀) = 0) (hsys : LowerQPSystem φ g x₀ y₀ lam₀ K r d γ)
-    (hd₀ : d₀ ∈ lowerQPFeasible g x₀ y₀ lam₀ r ∧
-      ∀ d ∈ lowerQPFeasible g x₀ y₀ lam₀ r, d ≠ d₀ →
-        lowerQPObjective φ g x₀ y₀ lam₀ r d₀ < lowerQPObjective φ g x₀ y₀ lam₀ r d) :
-    d = d₀ := by
-  by_contra hne
-  have h1 := hd₀.2 d (mem_lowerQPFeasible_of_lowerQPSystem hJK hsys) hne
-  have h2 := lowerQPObjective_le_of_lowerQPSystem hφ hg hkkt hssoc hJK hKI hsys d₀ hd₀.1
-  linarith
 
 /-- **(5.12) of [Dempe 2002]** under (LICQ), where `EΛ(x̄, ȳ) = {λ⁰}`: under the assumptions of
 Thm. 5.4, for every index set `K` with `J(λ⁰) ⊆ K ⊆ I(x̄, ȳ)`, the problem defining `v_α(λ⁰, K)`
