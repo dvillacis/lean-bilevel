@@ -34,6 +34,9 @@ many linear comparisons.
   of the follower's solution at a point of `R⁰` propagates along segments in the region.
 * `not_isLocalPessimisticSolution`: Thm. 3.9 of [Dempe 2002].
 * `isLocalPessimisticSolution_of_forall`: Thm. 3.10 of [Dempe 2002].
+* `examplePessimistic`, `isLocalPessimisticSolution_examplePessimistic`,
+  `examplePessimistic_descent`, `stableInterior_examplePessimistic`: a linear analogue of the
+  example on pp. 52–53 of [Dempe 2002]: the restriction to `R⁰` in Thm. 3.9 cannot be dropped.
 
 ## Differences from [Dempe 2002]
 
@@ -53,6 +56,11 @@ many linear comparisons.
   assumption `cl R⁰(B) = R(B)` is not needed; the book's first condition (all follower's solutions
   at `x̄` give the leader the same value) is replaced by `ȳ` being a worst one, which is part of the
   definition of a pessimistic solution.
+* The book's example on pp. 52–53 has a quadratic leader's objective and a follower's objective
+  depending on the leader's variable, outside the model. It is replaced by a linear example with
+  right-hand-side perturbations: the leader minimizes `-y` over `x ∈ [0, 1]`, the follower
+  minimizes `0` over `-x ≤ y ≤ x`; the face `y = x` gives a descent from `(0, 0)`, but `(0, 0)` is
+  a local pessimistic solution and `R⁰` of this face is empty.
 -/
 
 open Filter Topology Set
@@ -459,5 +467,103 @@ theorem isLocalPessimisticSolution_of_forall {Ω : Set E} {x₀ : E} {y₀ : F} 
   exact (EReal.coe_le_coe_iff.2 (h I hI hx₀I (x, y) hxy hxΩ)).trans (le_pessimisticValue hy)
 
 end LinearBilevel
+
+/-! ### The example on pp. 52–53 -/
+
+/-- A linear analogue of the example on pp. 52–53 of [Dempe 2002]: the leader minimizes `-y` over
+`Ω = [0, 1]`, and the follower minimizes the constant `0` over `{y | -x ≤ y ≤ x}`. -/
+noncomputable def examplePessimistic : LinearBilevel ℝ ℝ (Fin 0) (Fin 2) where
+  cx := 0
+  cy := -ContinuousLinearMap.id ℝ ℝ
+  A := Fin.elim0
+  B := Fin.elim0
+  a := Fin.elim0
+  C := fun _ ↦ ContinuousLinearMap.id ℝ ℝ
+  D := ![ContinuousLinearMap.id ℝ ℝ, -ContinuousLinearMap.id ℝ ℝ]
+  b := 0
+  d := 0
+
+theorem objective_examplePessimistic (p : ℝ × ℝ) : examplePessimistic.objective p = -p.2 := by
+  simp [LinearBilevel.objective, examplePessimistic]
+
+theorem slack_examplePessimistic_zero (p : ℝ × ℝ) :
+    examplePessimistic.slack 0 p = p.1 + p.2 := by
+  simp [LinearBilevel.slack, examplePessimistic]
+
+theorem slack_examplePessimistic_one (p : ℝ × ℝ) :
+    examplePessimistic.slack 1 p = p.1 - p.2 := by
+  simp [LinearBilevel.slack, examplePessimistic, sub_eq_add_neg]
+
+theorem lowerSolution_examplePessimistic (x : ℝ) :
+    examplePessimistic.lowerSolution x = Icc (-x) x := by
+  ext y
+  have hf : y ∈ examplePessimistic.lowerFeasible x ↔ y ∈ Icc (-x) x := by
+    rw [LinearBilevel.mem_lowerFeasible_iff, Fin.forall_fin_two, slack_examplePessimistic_zero,
+      slack_examplePessimistic_one, mem_Icc]
+    constructor <;> rintro ⟨h1, h2⟩ <;> constructor <;> dsimp only at * <;> linarith
+  refine ⟨fun h ↦ hf.1 h.1, fun h ↦ ⟨hf.2 h, fun z _ ↦ le_of_eq ?_⟩⟩
+  simp [LinearBilevel.lowerObjective, examplePessimistic]
+
+/-- In the example, `(x̄, ȳ) = (0, 0)` is a local pessimistic solution: `φ_p(x) = x`. -/
+theorem isLocalPessimisticSolution_examplePessimistic :
+    IsLocalPessimisticSolution examplePessimistic.objective examplePessimistic.lowerObjective
+      examplePessimistic.lowerFeasible (Icc 0 1) 0 0 := by
+  have h0 : (0 : ℝ) ∈ examplePessimistic.lowerSolution 0 := by
+    rw [lowerSolution_examplePessimistic]
+    simp
+  have hworst : ∀ y ∈ examplePessimistic.lowerSolution 0,
+      examplePessimistic.objective (0, y) ≤ examplePessimistic.objective (0, 0) := by
+    intro y hy
+    rw [lowerSolution_examplePessimistic] at hy
+    simp only [objective_examplePessimistic]
+    linarith [hy.1]
+  refine ⟨⟨le_rfl, zero_le_one⟩, h0, hworst, ?_⟩
+  show ∀ᶠ x in 𝓝[_] 0, _ ≤ _
+  filter_upwards [self_mem_nhdsWithin] with x hx
+  obtain ⟨⟨hx0, -⟩, -⟩ := hx
+  have hmem : -x ∈ examplePessimistic.lowerSolution x := by
+    rw [lowerSolution_examplePessimistic]
+    exact ⟨le_rfl, by linarith⟩
+  rw [pessimisticValue_eq h0 hworst]
+  refine le_trans ?_ (le_pessimisticValue hmem)
+  exact EReal.coe_le_coe_iff.2 (by simp [objective_examplePessimistic, hx0])
+
+/-- In the example, the face `y = x` (index set `{1}`, a dual support since `d = 0`) passes through
+`(x̄, ȳ) = (0, 0)` and through the strictly better point `(1, 1)` with `1 ∈ Ω`: all hypotheses
+of the second case of Thm. 3.9 hold except `1 ∈ R⁰({1})`. -/
+theorem examplePessimistic_descent :
+    examplePessimistic.IsDualSupport {1} ∧ ((0 : ℝ), (0 : ℝ)) ∈ examplePessimistic.activeFace {1} ∧
+      ((1 : ℝ), (1 : ℝ)) ∈ examplePessimistic.activeFace {1} ∧ (1 : ℝ) ∈ Icc (0 : ℝ) 1 ∧
+      examplePessimistic.objective (1, 1) < examplePessimistic.objective (0, 0) := by
+  refine ⟨⟨0, ⟨fun _ ↦ le_rfl, by simp [examplePessimistic]⟩, fun _ _ ↦ rfl⟩, ?_, ?_,
+    ⟨zero_le_one, le_rfl⟩, by simp [objective_examplePessimistic]⟩
+  · refine ⟨Fin.forall_fin_two.2 ⟨?_, ?_⟩, fun i hi ↦ ?_⟩
+    · simp [slack_examplePessimistic_zero]
+    · simp [slack_examplePessimistic_one]
+    · rw [mem_singleton_iff.1 hi, slack_examplePessimistic_one]
+      norm_num
+  · refine ⟨Fin.forall_fin_two.2 ⟨?_, ?_⟩, fun i hi ↦ ?_⟩
+    · rw [slack_examplePessimistic_zero]
+      norm_num
+    · simp [slack_examplePessimistic_one]
+    · rw [mem_singleton_iff.1 hi, slack_examplePessimistic_one]
+      norm_num
+
+/-- In the example, `R⁰({1})` is empty: the follower's solution is unique only at `x = 0`, where
+both constraints are active. So the restriction to `R⁰` in Thm. 3.9 cannot be dropped. -/
+theorem stableInterior_examplePessimistic : examplePessimistic.stableInterior {1} = ∅ := by
+  refine eq_empty_iff_forall_notMem.2 fun x ⟨y, hy, hact⟩ ↦ ?_
+  rw [lowerSolution_examplePessimistic] at hy
+  have hyI : y ∈ Icc (-x) x := hy ▸ mem_singleton y
+  have h1 : -x = y := by
+    have : -x ∈ Icc (-x) x := ⟨le_rfl, by linarith [hyI.1, hyI.2]⟩
+    rw [hy] at this
+    exact this
+  have h2 : x = y := by
+    have : x ∈ Icc (-x) x := ⟨by linarith [hyI.1, hyI.2], le_rfl⟩
+    rw [hy] at this
+    exact this
+  have := (hact 0).1 (by rw [slack_examplePessimistic_zero]; dsimp only; linarith)
+  simp at this
 
 end Bilevel
