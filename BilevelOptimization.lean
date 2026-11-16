@@ -9,6 +9,7 @@ import BilevelOptimization.LinearGeometry
 import BilevelOptimization.LipschitzMaps
 import BilevelOptimization.LipschitzProgram
 import BilevelOptimization.MPCC
+import BilevelOptimization.Multicriteria
 import BilevelOptimization.Parametric
 import BilevelOptimization.PiecewiseSmooth
 import BilevelOptimization.PiecewiseSolution
