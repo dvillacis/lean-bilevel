@@ -41,7 +41,9 @@ In `LinearGeometry.lean`, for the LP–LP model `LinearBilevel` (follower `min_y
 | D Thm 3.4, Cor 3.2 | bilevel feasibility = Pareto optimality in (3.10); bilevel problem = best Pareto point | ✓ | `IsParetoMinOn`, `multicriteriaObjective`, `isParetoMinOn_multicriteriaObjective_iff`, `paretoSet_eq`, `isMinOn_paretoSet_iff`, `LinearBilevel.feasible_eq_paretoSet` | arbitrary objectives and constraints; criteria `(ℓ x, -∑ ℓ x, φ)` for any injective `ℓ` instead of a full-rank submatrix; leader's constraints must not involve `y` (`B = 0`) |
 | D Thm 3.5 | Pareto optimal ⇔ optimal in (3.12) for `y = x̄` ⇔ feasible for the bilevel problem (3.13) | ✓ | `paretoLowerFeasible`, `paretoLowerObjective`, `isParetoMinOn_of_mem_solutionMap`, `isParetoMinOn_tfae` | arbitrary criteria `C` and set `M` |
 | D Sect. 3.4.2 | 0-1 (big-M) reformulation | ✓ | see S p. 133 below | |
-| D Thm 3.6–3.7 | F. John / KKT conditions | ☐ | | compare the general D Thm 5.16–5.17 |
+| D (3.16) | KKT reformulation as a program with complementarity constraints | ✓ | `LinearBilevel.kktMPCC_mem_iff`, `LinearBilevel.isLocalMinOn_kktFeasible` | in `LinearKKT.lean`; affine data on `(E × F) × (ι → ℝ)`, dual constraint tested on a basis of `F` |
+| D Thm 3.6 | F. John conditions with `ζᵢ ξᵢ ≥ 0` | ✓ | `LinearBilevel.exists_fritzJohn` | for every multiplier `λ⁰`; `κ₀ ∈ {0, 1}`; via `exists_fritzJohn_mpcc` (Scheel–Scholtes); model `C x + D y ≥ b` with coupled leader constraints instead of the book's `x ≥ 0`, `A³ y = b`, so one pair `(ζ, ξ)` and `ξᵢ = Dᵢ w` |
+| D Def 3.2, Thm 3.7 | generalized Slater condition for (3.17); KKT conditions | ✓ | `LinearBilevel.GeneralizedSlater`, `LinearBilevel.TightenedMFCQ`, `LinearBilevel.GeneralizedSlater.tightenedMFCQ`, `LinearBilevel.exists_kkt` | proved under (MFCQ) for (3.17) in dual form, which Slater implies (affine constraints) |
 | D Thm 3.8–3.10 | regions of stability, basic matrices | ☐ | | |
 | D Thm 3.11 | global optimality via the duality gap | ✓ | `LinearBilevel.isMinOn_feasible_iff_forall_gap_pos` | pointwise form; avoids attainment in the quadratic problem (3.23) |
 
