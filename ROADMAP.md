@@ -37,7 +37,9 @@ In `LinearGeometry.lean`, for the LP–LP model `LinearBilevel` (follower `min_y
 | D Thm 3.3 | existence of optimistic solutions | ✓ | `LinearBilevel.exists_isMinOn_feasible` | |
 | D Ex. pp. 38–39 | pessimistic problem without solution | ✓ | `not_exists_isPessimisticSolution_linear_example` | |
 | D Ex. p. 33 | disconnected feasible set | ✓ | `not_isPreconnected_linear_example` | points with `x = 1, 4` feasible, none with `x = 2` |
-| D Thm 3.4–3.5 | relations to multicriteria optimization | ☐ | | |
+| D Ex. p. 40 | a bilevel solution that is not (weakly) Pareto optimal for the bicriteria problem | ✓ | `solutionMap_exampleBilevelPareto`, `isMinOn_exampleBilevelPareto`, `not_isParetoMinOn_exampleBilevelPareto` | in `Multicriteria.lean`; roles of `x` and `y` swapped to the library's convention |
+| D Thm 3.4, Cor 3.2 | bilevel feasibility = Pareto optimality in (3.10); bilevel problem = best Pareto point | ✓ | `IsParetoMinOn`, `multicriteriaObjective`, `isParetoMinOn_multicriteriaObjective_iff`, `paretoSet_eq`, `isMinOn_paretoSet_iff`, `LinearBilevel.feasible_eq_paretoSet` | arbitrary objectives and constraints; criteria `(ℓ x, -∑ ℓ x, φ)` for any injective `ℓ` instead of a full-rank submatrix; leader's constraints must not involve `y` (`B = 0`) |
+| D Thm 3.5 | Pareto optimal ⇔ optimal in (3.12) for `y = x̄` ⇔ feasible for the bilevel problem (3.13) | ✓ | `paretoLowerFeasible`, `paretoLowerObjective`, `isParetoMinOn_of_mem_solutionMap`, `isParetoMinOn_tfae` | arbitrary criteria `C` and set `M` |
 | D Sect. 3.4.2 | 0-1 (big-M) reformulation | ✓ | see S p. 133 below | |
 | D Thm 3.6–3.7 | F. John / KKT conditions | ☐ | | compare the general D Thm 5.16–5.17 |
 | D Thm 3.8–3.10 | regions of stability, basic matrices | ☐ | | |
