@@ -42,6 +42,7 @@ follower's feasible-set map `K` (or constraints `gᵢ(x, y) ≤ 0`) and the lead
 | Elements of the generalized Jacobian | `BilevelOptimization/SolutionJacobian` | `∇y^I(x̄) ∈ ∂y(x̄)` for directions in `int R(I, λ⁰)`, under (SCR), and `∂y(x̄)` under (FRR) (D Thm. 4.12–4.13, Cor. 4.2) |
 | Upper Lipschitz solutions | `BilevelOptimization/UpperLipschitzSolution` | upper Lipschitz estimate for local solutions and multipliers under (LICQ) and (SSOC) (D Thm. 4.5) |
 | Optimality via strong stability | `BilevelOptimization/StrongStabilityOptimality` | unique lower-level solution function of a convex follower; necessary conditions (5.10), (5.11) with the directional derivative (D Thm. 5.4) and their combinatorial form (5.12); non-sufficiency example (D p. 138) |
+| Assumption (A) without (CRCQ) | `BilevelOptimization/AssumptionAExample` | the example D pp. 139–141: (LICQ) and (CRCQ) fail, the follower's solution function is not Lipschitz, its directional derivative is discontinuous in the direction, and (5.11) with the lower Dini derivative fails at the global solution |
 | Local KKT solutions | `BilevelOptimization/KKTLocal` | local solutions of (5.26) for every multiplier are local bilevel solutions, and the local equivalence under convexity and Slater [Dempe–Dutta 2012, Thm. 3.1]; under (CRCQ) the vertices of the multiplier set suffice (Cor. 3.3); a counterexample with a single multiplier |
 
 D = [Dempe 2002]. `ROADMAP.md` lists the statements of the sources with their Lean names or status.
