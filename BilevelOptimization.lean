@@ -1,6 +1,8 @@
+import BilevelOptimization.ActiveConstraints
 import BilevelOptimization.AssumptionAExample
 import BilevelOptimization.Basic
 import BilevelOptimization.GeneralizedJacobian
+import BilevelOptimization.JacobianExamples
 import BilevelOptimization.KKT
 import BilevelOptimization.KKTLocal
 import BilevelOptimization.KKTOptimality
