@@ -17,6 +17,7 @@ import BilevelOptimization.Multicriteria
 import BilevelOptimization.Parametric
 import BilevelOptimization.PiecewiseSmooth
 import BilevelOptimization.PiecewiseSolution
+import BilevelOptimization.Pseudodifferentiable
 import BilevelOptimization.SolutionJacobian
 import BilevelOptimization.StabilityRegions
 import BilevelOptimization.StrongStability
