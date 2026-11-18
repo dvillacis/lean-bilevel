@@ -8,10 +8,10 @@ import BilevelOptimization.ValueFunctionDirectional
 /-!
 # Strong stability of local solutions
 
-Thm. 4.4 of [Dempe 2002] (Kojima's theorem), in the version proved in the book: if `ȳ` is a
-KKT point of the follower's problem `min_y {φ(x̄, y) | gᵢ(x̄, y) ≤ 0}` at which (LICQ) and the
-strong second-order sufficient condition (SSOC) hold, then `ȳ` is *strongly stable*: for `x`
-near `x̄` the problem has a unique local solution `y(x)` near `ȳ`, and `x ↦ y(x)` is continuous.
+Thm. 4.4 of [Dempe 2002] (Kojima's theorem): if `ȳ` is a KKT point of the follower's problem
+`min_y {φ(x̄, y) | gᵢ(x̄, y) ≤ 0}` at which (MFCQ) and the strong second-order sufficient
+condition (SSOC) hold, then `ȳ` is *strongly stable*: for `x` near `x̄` the problem has a unique
+local solution `y(x)` near `ȳ`, and `x ↦ y(x)` is continuous.
 
 ## Main results
 
@@ -19,16 +19,28 @@ near `x̄` the problem has a unique local solution `y(x)` near `ȳ`, and `x ↦ 
   `y`-Hessian `lowerHessian` of the follower's Lagrangian `lowerLagrangian`.
 * `IsLowerStronglyStable`: strong stability [Dempe 2002, Def. 4.4].
 * `exists_pos_lowerLagrangian_expansion`: a second-order expansion of the Lagrangian, uniform in
-  `x`, the base point and the multiplier.
+  `x`, the base point and the multiplier; `exists_pos_lowerLagrangian_expansion_uniform`: the same
+  for all multipliers, with the Hessian at the same multiplier (`lowerHessian_eq_sum`).
+* `exists_pos_lowerSSOC_of_isCompact`: (SSOC) in quantitative form, uniform over a compact set of
+  multipliers.
 * `exists_pos_lt_of_lowerSSOC`: (SSOC) makes a KKT point a strict local solution.
 * `exists_pos_eq_of_isLowerKKT`: under (SSOC), KKT points near `(x̄, ȳ)` with multipliers near
   `λ⁰` are unique (no constraint qualification needed).
-* `isLowerStronglyStable`, `isLowerStronglyStable_of_isLocalMinOn`: Thm. 4.4.
+* `exists_pos_eq_of_isLowerKKT_of_lowerPLI`: under (MFCQ) and (SSOC), KKT points near `(x̄, ȳ)`
+  with multipliers near `Λ(x̄, ȳ)` are unique.
+* `isLowerStronglyStable_of_lowerPLI`, `isLowerStronglyStable_of_isLocalMinOn_of_lowerPLI`:
+  Thm. 4.4; `isLowerStronglyStable`, `isLowerStronglyStable_of_isLocalMinOn`: its (LICQ) case.
 
 ## Differences from the book
 
-* Thm. 4.4 is stated in the book under (MFCQ), citing Kojima, but the book proves it (pp. 101–104)
-  under (LICQ), which makes the multiplier unique; we follow the proof and assume (LICQ).
+* The book proves Thm. 4.4 (pp. 101–104) only under (LICQ), which makes the multiplier unique,
+  and refers to Kojima's proof by degree theory for (MFCQ). We prove the (MFCQ) case without
+  degree theory, with (MFCQ) in its dual form (PLI). The only new ingredient is the uniqueness of
+  nearby KKT points (`exists_pos_eq_of_isLowerKKT_of_lowerPLI`): if `(y¹, λ¹)` and `(y², λ²)` are
+  KKT pairs at `x` with `λʲ` near `μʲ ∈ Λ(x̄, ȳ)`, adding the two second-order expansions gives
+  `∇²_yy L(x̄, ȳ, μ)(v, v) ≤ o(‖v‖²)` for `v = y² - y¹` and the midpoint
+  `μ = (μ¹ + μ²) / 2 ∈ Λ(x̄, ȳ)`, the same identity shows that `v` is almost critical for `μ`,
+  and (SSOC), uniform on the compact set `Λ(x̄, ȳ)`, forces `v = 0`.
 * The data are `C²` on all of `E × F` and there are no equality constraints.
 * Existence uses the problem restricted to a closed ball `B̄(ȳ, ρ)` as in (4.29); its solutions
   stay in the open ball by the Berge argument
@@ -159,6 +171,92 @@ theorem sum_mul_nonpos_of_mem_lowerFeasible {x : E} {y : F} {lam : ι → ℝ}
     (hy : y ∈ lowerFeasible g x) (hlam : ∀ i, 0 ≤ lam i) : ∑ i, lam i * g i (x, y) ≤ 0 :=
   Finset.sum_nonpos fun i _ ↦ mul_nonpos_of_nonneg_of_nonpos (hlam i) (hy i)
 
+/-- A quantitative form of (SSOC), uniform over a compact set `K` of multipliers on which the
+Hessian depends continuously: `∇²_yy L(x̄, ȳ, λ)(v, v) ≥ c ‖v‖²` for all `λ ∈ K` and all `v` that
+are critical up to `η ‖v‖` in the weighted sense `∑ λᵢ |∇_y gᵢ(x̄, ȳ) v| < η ‖v‖`. -/
+theorem exists_pos_lowerSSOC_of_isCompact [ProperSpace F] {x₀ : E} {y₀ : F}
+    {K : Set (ι → ℝ)} (hK : IsCompact K) (hKΛ : K ⊆ lowerMultipliers φ g x₀ y₀)
+    (hH : ContinuousOn (fun p : (ι → ℝ) × F ↦ lowerHessian φ g x₀ y₀ p.1 p.2 p.2) (K ×ˢ univ))
+    (hssoc : LowerSSOC φ g x₀ y₀) :
+    ∃ c > 0, ∃ η > 0, ∀ lam ∈ K, ∀ v : F,
+      ∑ i, lam i * |fderiv ℝ (fun z ↦ g i (x₀, z)) y₀ v| < η * ‖v‖ →
+        c * ‖v‖ ^ 2 ≤ lowerHessian φ g x₀ y₀ lam v v := by
+  set D : ι → StrongDual ℝ F := fun i ↦ fderiv ℝ (fun z ↦ g i (x₀, z)) y₀
+  set u : (ι → ℝ) × F → ℝ := fun p ↦ ∑ i, p.1 i * |D i p.2| with hu_def
+  set q : (ι → ℝ) × F → ℝ := fun p ↦ lowerHessian φ g x₀ y₀ p.1 p.2 p.2 with hq_def
+  set S : Set ((ι → ℝ) × F) := K ×ˢ Metric.sphere (0 : F) 1 with hS_def
+  have hu : Continuous u := continuous_finsetSum _ fun i _ ↦
+    ((continuous_apply i).comp continuous_fst).mul (((D i).continuous.comp continuous_snd).abs)
+  have hS : IsCompact S := hK.prod (isCompact_sphere 0 1)
+  have hScl : IsClosed S := hS.isClosed
+  have hq : ContinuousOn q S := hH.mono (prod_mono subset_rfl (subset_univ _))
+  have hu0 : ∀ p ∈ S, 0 ≤ u p := fun p hp ↦
+    Finset.sum_nonneg fun i _ ↦ mul_nonneg ((hKΛ hp.1).2.1 i) (abs_nonneg _)
+  -- positivity on the critical directions of the unit sphere
+  obtain ⟨c, hc, hcC⟩ : ∃ c > 0, ∀ p ∈ S, u p = 0 → 2 * c ≤ q p := by
+    set C := S ∩ u ⁻¹' {0}
+    have hC : IsCompact C := hS.inter_right (isClosed_singleton.preimage hu)
+    rcases C.eq_empty_or_nonempty with hCe | hCne
+    · refine ⟨1, one_pos, fun p hp hp0 ↦ ?_⟩
+      have : p ∈ C := ⟨hp, hp0⟩
+      rw [hCe] at this
+      simp at this
+    obtain ⟨⟨lam, d⟩, ⟨⟨hlam, hdS⟩, hd0⟩, hmin⟩ := hC.exists_isMinOn hCne (hq.mono inter_subset_left)
+    have hd0' : u (lam, d) = 0 := hd0
+    have hpos : 0 < q (lam, d) := by
+      refine hssoc lam (hKΛ hlam) d (fun h ↦ by rw [h] at hdS; simp at hdS) fun i hi ↦ ?_
+      have h1 := (Finset.sum_eq_zero_iff_of_nonneg fun i _ ↦
+        mul_nonneg ((hKΛ hlam).2.1 i) (abs_nonneg (D i d))).1 hd0' i (Finset.mem_univ i)
+      exact abs_eq_zero.1 ((mul_eq_zero.1 h1).resolve_left hi.ne')
+    refine ⟨q (lam, d) / 2, by positivity, fun p hp hp0 ↦ ?_⟩
+    have : q (lam, d) ≤ q p := hmin ⟨hp, hp0⟩
+    linarith
+  -- a margin around the critical directions
+  obtain ⟨η, hη, hηT⟩ : ∃ η > 0, ∀ p ∈ S, u p < η → c ≤ q p := by
+    set T := S ∩ q ⁻¹' Iic c
+    have hT : IsCompact T :=
+      hS.of_isClosed_subset (hq.preimage_isClosed_of_isClosed hScl isClosed_Iic)
+        inter_subset_left
+    rcases T.eq_empty_or_nonempty with hTe | hTne
+    · refine ⟨1, one_pos, fun p hp _ ↦ ?_⟩
+      by_contra hlt
+      have : p ∈ T := ⟨hp, (not_le.1 hlt).le⟩
+      rw [hTe] at this
+      simp at this
+    obtain ⟨p, ⟨hpS, hpq⟩, hmin⟩ := hT.exists_isMinOn hTne hu.continuousOn
+    have hpq' : q p ≤ c := hpq
+    have hp0 : 0 < u p := by
+      refine lt_of_le_of_ne (hu0 p hpS) fun h ↦ ?_
+      have := hcC p hpS h.symm
+      linarith
+    refine ⟨u p, hp0, fun p' hp' hlt ↦ ?_⟩
+    by_contra hle
+    have : u p ≤ u p' := hmin ⟨hp', (not_le.1 hle).le⟩
+    linarith
+  -- homogeneity
+  refine ⟨c, hc, η, hη, fun lam hlam v hv ↦ ?_⟩
+  rcases eq_or_ne v 0 with rfl | hv0
+  · simp
+  have hn : 0 < ‖v‖ := norm_pos_iff.2 hv0
+  set d := ‖v‖⁻¹ • v with hd
+  have hdS : (lam, d) ∈ S := by
+    refine ⟨hlam, ?_⟩
+    rw [mem_sphere_zero_iff_norm, hd, norm_smul, norm_inv, norm_norm, inv_mul_cancel₀ hn.ne']
+  have hud : u (lam, d) = ‖v‖⁻¹ * u (lam, v) := by
+    simp only [u, hd, map_smul, smul_eq_mul, abs_mul, abs_inv, abs_norm, Finset.mul_sum]
+    exact Finset.sum_congr rfl fun i _ ↦ by ring
+  have hqd : q (lam, d) = ‖v‖⁻¹ ^ 2 * q (lam, v) := by
+    simp only [q, hd, map_smul, smul_apply, smul_eq_mul]
+    ring
+  have h1 := hηT _ hdS (by
+    rw [hud]
+    calc ‖v‖⁻¹ * u (lam, v) < ‖v‖⁻¹ * (η * ‖v‖) := mul_lt_mul_of_pos_left hv (inv_pos.2 hn)
+      _ = η := by field_simp)
+  rw [hqd] at h1
+  calc c * ‖v‖ ^ 2 ≤ ‖v‖⁻¹ ^ 2 * q (lam, v) * ‖v‖ ^ 2 :=
+        mul_le_mul_of_nonneg_right h1 (by positivity)
+    _ = q (lam, v) := by field_simp
+
 /-- A quantitative form of (SSOC): `∇²_yy L(x̄, ȳ, λ⁰)(v, v) ≥ c ‖v‖²` for all `v` that are
 critical up to `η ‖v‖` in the weighted sense `∑ λ⁰ᵢ |∇_y gᵢ(x̄, ȳ) v| < η ‖v‖`. -/
 theorem exists_pos_lowerSSOC [ProperSpace F] {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ}
@@ -166,76 +264,15 @@ theorem exists_pos_lowerSSOC [ProperSpace F] {x₀ : E} {y₀ : F} {lam₀ : ι 
     ∃ c > 0, ∃ η > 0, ∀ v : F,
       ∑ i, lam₀ i * |fderiv ℝ (fun z ↦ g i (x₀, z)) y₀ v| < η * ‖v‖ →
         c * ‖v‖ ^ 2 ≤ lowerHessian φ g x₀ y₀ lam₀ v v := by
-  set H := lowerHessian φ g x₀ y₀ lam₀
-  set D : ι → StrongDual ℝ F := fun i ↦ fderiv ℝ (fun z ↦ g i (x₀, z)) y₀
-  set u : F → ℝ := fun v ↦ ∑ i, lam₀ i * |D i v| with hu_def
-  set q : F → ℝ := fun v ↦ H v v with hq_def
-  have hu : Continuous u := continuous_finsetSum _ fun i _ ↦
-    continuous_const.mul ((D i).continuous.abs)
-  have hq : Continuous q := H.continuous.clm_apply continuous_id
-  have hu0 : ∀ v, 0 ≤ u v := fun v ↦
-    Finset.sum_nonneg fun i _ ↦ mul_nonneg (hkkt.2.1 i) (abs_nonneg _)
-  have hS : IsCompact (Metric.sphere (0 : F) 1) := isCompact_sphere 0 1
-  -- positivity on the critical directions of the unit sphere
-  obtain ⟨c, hc, hcC⟩ : ∃ c > 0, ∀ d ∈ Metric.sphere (0 : F) 1, u d = 0 → 2 * c ≤ q d := by
-    set C := Metric.sphere (0 : F) 1 ∩ u ⁻¹' {0}
-    have hC : IsCompact C := hS.inter_right (isClosed_singleton.preimage hu)
-    rcases C.eq_empty_or_nonempty with hCe | hCne
-    · refine ⟨1, one_pos, fun d hd hd0 ↦ ?_⟩
-      have : d ∈ C := ⟨hd, hd0⟩
-      rw [hCe] at this
-      simp at this
-    obtain ⟨d, ⟨hdS, hd0⟩, hmin⟩ := hC.exists_isMinOn hCne hq.continuousOn
-    have hd0' : u d = 0 := hd0
-    have hpos : 0 < q d := by
-      refine hssoc lam₀ hkkt d (fun h ↦ by rw [h] at hdS; simp at hdS) fun i hi ↦ ?_
-      have h1 := (Finset.sum_eq_zero_iff_of_nonneg fun i _ ↦
-        mul_nonneg (hkkt.2.1 i) (abs_nonneg (D i d))).1 hd0' i (Finset.mem_univ i)
-      exact abs_eq_zero.1 ((mul_eq_zero.1 h1).resolve_left hi.ne')
-    refine ⟨q d / 2, by positivity, fun d' hd' hd'0 ↦ ?_⟩
-    have : q d ≤ q d' := hmin ⟨hd', hd'0⟩
-    linarith
-  -- a margin around the critical directions
-  obtain ⟨η, hη, hηT⟩ : ∃ η > 0, ∀ d ∈ Metric.sphere (0 : F) 1, u d < η → c ≤ q d := by
-    set T := Metric.sphere (0 : F) 1 ∩ {d | q d ≤ c}
-    have hT : IsCompact T := hS.inter_right (isClosed_le hq continuous_const)
-    rcases T.eq_empty_or_nonempty with hTe | hTne
-    · refine ⟨1, one_pos, fun d hd _ ↦ ?_⟩
-      by_contra hlt
-      have : d ∈ T := ⟨hd, (not_le.1 hlt).le⟩
-      rw [hTe] at this
-      simp at this
-    obtain ⟨d, ⟨hdS, hdq⟩, hmin⟩ := hT.exists_isMinOn hTne hu.continuousOn
-    have hdq' : q d ≤ c := hdq
-    have hd0 : 0 < u d := by
-      refine lt_of_le_of_ne (hu0 d) fun h ↦ ?_
-      have := hcC d hdS h.symm
-      linarith
-    refine ⟨u d, hd0, fun d' hd' hlt ↦ ?_⟩
-    by_contra hle
-    have : u d ≤ u d' := hmin ⟨hd', (not_le.1 hle).le⟩
-    linarith
-  -- homogeneity
-  refine ⟨c, hc, η, hη, fun v hv ↦ ?_⟩
-  rcases eq_or_ne v 0 with rfl | hv0
-  · simp
-  have hn : 0 < ‖v‖ := norm_pos_iff.2 hv0
-  set d := ‖v‖⁻¹ • v with hd
-  have hdS : d ∈ Metric.sphere (0 : F) 1 := by
-    rw [mem_sphere_zero_iff_norm, hd, norm_smul, norm_inv, norm_norm, inv_mul_cancel₀ hn.ne']
-  have hud : u d = ‖v‖⁻¹ * u v := by
-    simp only [u, hd, map_smul, smul_eq_mul, abs_mul, abs_inv, abs_norm, Finset.mul_sum]
-    exact Finset.sum_congr rfl fun i _ ↦ by ring
-  have hqd : q d = ‖v‖⁻¹ ^ 2 * q v := by
-    simp only [q, hd, map_smul, smul_apply, smul_eq_mul]
-    ring
-  have h1 := hηT d hdS (by
-    rw [hud]
-    calc ‖v‖⁻¹ * u v < ‖v‖⁻¹ * (η * ‖v‖) := mul_lt_mul_of_pos_left hv (inv_pos.2 hn)
-      _ = η := by field_simp)
-  rw [hqd] at h1
-  calc c * ‖v‖ ^ 2 ≤ ‖v‖⁻¹ ^ 2 * q v * ‖v‖ ^ 2 := mul_le_mul_of_nonneg_right h1 (by positivity)
-    _ = q v := by field_simp
+  have hH : ContinuousOn (fun p : (ι → ℝ) × F ↦ lowerHessian φ g x₀ y₀ p.1 p.2 p.2)
+      ({lam₀} ×ˢ univ) :=
+    (((lowerHessian φ g x₀ y₀ lam₀).continuous.comp continuous_snd).clm_apply
+      continuous_snd).continuousOn.congr fun p hp ↦ by
+        rw [show p.1 = lam₀ from hp.1]
+        rfl
+  obtain ⟨c, hc, η, hη, h⟩ := exists_pos_lowerSSOC_of_isCompact isCompact_singleton
+    (singleton_subset_iff.2 hkkt) hH hssoc
+  exact ⟨c, hc, η, hη, h lam₀ rfl⟩
 
 
 theorem contDiff_fderiv_comp_inr {u : E × F → ℝ} (hu : ContDiff ℝ 2 u) :
@@ -428,6 +465,101 @@ theorem exists_pos_lowerLagrangian_expansion (hφ : ContDiff ℝ 2 φ)
   rw [e1, Real.norm_eq_abs, sub_zero, mul_one] at hmv
   exact hmv
 
+/-! ### Dependence on the multiplier -/
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F] in
+theorem lowerLagrangian_eq_sum (x : E) (lam : ι → ℝ) (y : F) :
+    lowerLagrangian φ g x lam y =
+      lowerLagrangian φ g x 0 y + ∑ i, lam i * lowerLagrangian (g i) g x 0 y := by
+  simp [lowerLagrangian]
+
+theorem lowerLagrangianDeriv_eq_sum (lam : ι → ℝ) (p : E × F) :
+    lowerLagrangianDeriv φ g lam p =
+      lowerLagrangianDeriv φ g 0 p + ∑ i, lam i • lowerLagrangianDeriv (g i) g 0 p := by
+  simp [lowerLagrangianDeriv]
+
+/-- The Hessian `∇²_yy L(x̄, ȳ, λ)` is affine in `λ`. -/
+theorem lowerHessian_eq_sum (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i)) (x₀ : E)
+    (y₀ : F) (lam : ι → ℝ) :
+    lowerHessian φ g x₀ y₀ lam =
+      lowerHessian φ g x₀ y₀ 0 + ∑ i, lam i • lowerHessian (g i) g x₀ y₀ 0 := by
+  set p₀ : E × F := (x₀, y₀)
+  set B : ι → E × F → StrongDual ℝ F :=
+    fun i p ↦ (fderiv ℝ (g i) p).comp (ContinuousLinearMap.inr ℝ E F)
+  have hB := fun i ↦
+    ((contDiff_fderiv_comp_inr (hg i)).differentiable one_ne_zero p₀).hasFDerivAt
+  have h : ∀ (u : E × F → ℝ), ContDiff ℝ 2 u → ∀ lam : ι → ℝ, lowerHessian u g x₀ y₀ lam =
+      (fderiv ℝ (fun p ↦ (fderiv ℝ u p).comp (ContinuousLinearMap.inr ℝ E F)) p₀ +
+        ∑ i, lam i • fderiv ℝ (B i) p₀).comp (ContinuousLinearMap.inr ℝ E F) := by
+    intro u hu lam
+    have hd : HasFDerivAt (lowerLagrangianDeriv u g lam)
+        (fderiv ℝ (fun p ↦ (fderiv ℝ u p).comp (ContinuousLinearMap.inr ℝ E F)) p₀ +
+          ∑ i, lam i • fderiv ℝ (B i) p₀) p₀ :=
+      ((contDiff_fderiv_comp_inr hu).differentiable one_ne_zero p₀).hasFDerivAt.add
+        (HasFDerivAt.fun_sum fun i _ ↦ (hB i).const_smul (lam i))
+    rw [lowerHessian, hd.fderiv]
+  have h0 : ∀ (u : E × F → ℝ), ContDiff ℝ 2 u → lowerHessian u g x₀ y₀ 0 =
+      (fderiv ℝ (fun p ↦ (fderiv ℝ u p).comp (ContinuousLinearMap.inr ℝ E F)) p₀).comp
+        (ContinuousLinearMap.inr ℝ E F) := fun u hu ↦ by
+    rw [h u hu 0, Finset.sum_eq_zero (fun i _ ↦ by
+      rw [Pi.zero_apply]; exact zero_smul ℝ (fderiv ℝ (B i) p₀)), add_zero]
+  have hg0 : ∀ i, lowerHessian (g i) g x₀ y₀ 0 =
+      (fderiv ℝ (B i) p₀).comp (ContinuousLinearMap.inr ℝ E F) := fun i ↦ h0 (g i) (hg i)
+  rw [h φ hφ, h0 φ hφ, ContinuousLinearMap.add_comp, ContinuousLinearMap.finsetSum_comp]
+  simp only [hg0, ContinuousLinearMap.smul_comp]
+
+/-- A second-order expansion of the follower's Lagrangian, uniform in `x`, the base point and
+all multipliers `λ`, with the Hessian `∇²_yy L(x̄, ȳ, λ)` at the same multiplier: the error is
+at most `ε (1 + ∑ |λᵢ|) ‖y₂ - y₁‖²`. -/
+theorem exists_pos_lowerLagrangian_expansion_uniform (hφ : ContDiff ℝ 2 φ)
+    (hg : ∀ i, ContDiff ℝ 2 (g i)) (x₀ : E) (y₀ : F) {ε : ℝ} (hε : 0 < ε) :
+    ∃ δ > 0, ∀ (x : E) (y₁ y₂ : F) (lam : ι → ℝ), dist x x₀ < δ → dist y₁ y₀ < δ →
+      dist y₂ y₀ < δ →
+      |lowerLagrangian φ g x lam y₂ - lowerLagrangian φ g x lam y₁ -
+        lowerLagrangianDeriv φ g lam (x, y₁) (y₂ - y₁) -
+        lowerHessian φ g x₀ y₀ lam (y₂ - y₁) (y₂ - y₁) / 2| ≤
+          ε * (1 + ∑ i, |lam i|) * ‖y₂ - y₁‖ ^ 2 := by
+  -- the expansion of a single function
+  have h1 : ∀ u : E × F → ℝ, ContDiff ℝ 2 u → ∀ᶠ q : E × F × F in 𝓝 (x₀, y₀, y₀),
+      |lowerLagrangian u g q.1 0 q.2.2 - lowerLagrangian u g q.1 0 q.2.1 -
+        lowerLagrangianDeriv u g 0 (q.1, q.2.1) (q.2.2 - q.2.1) -
+        lowerHessian u g x₀ y₀ 0 (q.2.2 - q.2.1) (q.2.2 - q.2.1) / 2| ≤
+          ε * ‖q.2.2 - q.2.1‖ ^ 2 := by
+    intro u hu
+    obtain ⟨δ, hδ, h⟩ := exists_pos_lowerLagrangian_expansion hu hg x₀ y₀ 0 hε
+    filter_upwards [Metric.ball_mem_nhds _ hδ] with q hq
+    simp only [Metric.mem_ball, Prod.dist_eq, max_lt_iff] at hq
+    exact h q.1 q.2.1 q.2.2 0 hq.1 hq.2.1 hq.2.2 (by rw [dist_self]; exact hδ)
+  obtain ⟨δ, hδ, h⟩ := Metric.eventually_nhds_iff.1
+    ((h1 φ hφ).and (eventually_all.2 fun i ↦ h1 (g i) (hg i)))
+  refine ⟨δ, hδ, fun x y₁ y₂ lam hx hy₁ hy₂ ↦ ?_⟩
+  obtain ⟨hφe, hge⟩ := h (y := (x, y₁, y₂)) (by
+    simp only [Prod.dist_eq, max_lt_iff]
+    exact ⟨hx, hy₁, hy₂⟩)
+  set v := y₂ - y₁
+  set Eφ := lowerLagrangian φ g x 0 y₂ - lowerLagrangian φ g x 0 y₁ -
+    lowerLagrangianDeriv φ g 0 (x, y₁) v - lowerHessian φ g x₀ y₀ 0 v v / 2 with hEφ
+  set Eg : ι → ℝ := fun i ↦ lowerLagrangian (g i) g x 0 y₂ - lowerLagrangian (g i) g x 0 y₁ -
+    lowerLagrangianDeriv (g i) g 0 (x, y₁) v - lowerHessian (g i) g x₀ y₀ 0 v v / 2 with hEg
+  have e : lowerLagrangian φ g x lam y₂ - lowerLagrangian φ g x lam y₁ -
+      lowerLagrangianDeriv φ g lam (x, y₁) v - lowerHessian φ g x₀ y₀ lam v v / 2 =
+        Eφ + ∑ i, lam i * Eg i := by
+    rw [lowerLagrangian_eq_sum x lam y₂, lowerLagrangian_eq_sum x lam y₁,
+      lowerLagrangianDeriv_eq_sum, lowerHessian_eq_sum hφ hg]
+    simp only [hEφ, hEg, add_apply, sum_apply, smul_apply, smul_eq_mul,
+      mul_sub, Finset.sum_sub_distrib, mul_div_assoc', ← Finset.sum_div]
+    ring
+  rw [e]
+  calc _ ≤ |Eφ| + ∑ i, |lam i * Eg i| :=
+        (abs_add_le _ _).trans (add_le_add_right (Finset.abs_sum_le_sum_abs _ _) _)
+    _ ≤ ε * ‖v‖ ^ 2 + ∑ i, |lam i| * (ε * ‖v‖ ^ 2) := by
+        gcongr with i
+        rw [abs_mul]
+        exact mul_le_mul_of_nonneg_left (hge i) (abs_nonneg _)
+    _ = ε * (1 + ∑ i, |lam i|) * ‖v‖ ^ 2 := by
+        rw [← Finset.sum_mul]
+        ring
+
 variable [FiniteDimensional ℝ F]
 
 /-- Under (SSOC), KKT points of the follower's problem near `(x̄, ȳ)` with multipliers near `λ⁰`
@@ -506,6 +638,283 @@ theorem exists_pos_eq_of_isLowerKKT (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContD
       _ < η * ‖y₂ - y₁‖ := mul_lt_mul_of_pos_right hk hn
   have := hH _ hu
   nlinarith [mul_pos hc (pow_pos hn 2)]
+
+/-- An elementary estimate used in `exists_pos_eq_of_isLowerKKT_of_lowerPLI`: if `d` is the
+linearization of the increment `b - a` of a constraint up to `ε w`, `λ` is a multiplier
+complementary to `a` and `μ` is close to `λ`, then `μ |d|` is controlled by `-λ b`. -/
+theorem mul_abs_le_of_abs_sub_le {a b d lam μ δ ε R C w : ℝ} (hs : |b - a - d| ≤ ε * w)
+    (hd : |d| ≤ C * w) (hlam : 0 ≤ lam) (hca : lam * a = 0) (hb : b ≤ 0) (hμ : |lam - μ| ≤ δ)
+    (hμ0 : 0 ≤ μ) (hμR : μ ≤ R) (hδ : 0 ≤ δ) (hε : 0 ≤ ε) (hw : 0 ≤ w) :
+    μ * |d| ≤ -(lam * b) + (δ * C + δ * ε + R * ε) * w := by
+  have ha : |b - a| ≤ (C + ε) * w := by
+    have := abs_sub_abs_le_abs_sub (b - a) d
+    linarith
+  have hda : |d| ≤ |b - a| + ε * w := by
+    have := abs_sub_abs_le_abs_sub d (b - a)
+    rw [abs_sub_comm d (b - a)] at this
+    linarith
+  have hla : lam * |b - a| = -(lam * b) := by
+    rw [← abs_of_nonneg hlam, ← abs_mul, abs_of_nonneg hlam, mul_sub, hca, sub_zero,
+      abs_of_nonpos (mul_nonpos_of_nonneg_of_nonpos hlam hb)]
+  have hμa : μ * |b - a| ≤ lam * |b - a| + δ * ((C + ε) * w) := by
+    have h1 : (μ - lam) * |b - a| ≤ |μ - lam| * |b - a| :=
+      mul_le_mul_of_nonneg_right (le_abs_self _) (abs_nonneg _)
+    have h2 : |μ - lam| * |b - a| ≤ δ * ((C + ε) * w) := by
+      rw [abs_sub_comm]
+      exact mul_le_mul hμ ha (abs_nonneg _) hδ
+    linarith
+  calc μ * |d| ≤ μ * (|b - a| + ε * w) := mul_le_mul_of_nonneg_left hda hμ0
+    _ = μ * |b - a| + μ * (ε * w) := by ring
+    _ ≤ lam * |b - a| + δ * ((C + ε) * w) + R * (ε * w) :=
+        add_le_add hμa (mul_le_mul_of_nonneg_right hμR (by positivity))
+    _ = _ := by rw [hla]; ring
+
+/-- Under (MFCQ) (in its dual form (PLI)) and (SSOC), KKT points of the follower's problem near
+`(x̄, ȳ)` with multipliers near the multiplier set `Λ(x̄, ȳ)` are unique. The two multipliers may
+be close to different points `μ¹, μ² ∈ Λ(x̄, ȳ)`; (SSOC) is applied at the midpoint
+`(μ¹ + μ²) / 2 ∈ Λ(x̄, ȳ)`. -/
+theorem exists_pos_eq_of_isLowerKKT_of_lowerPLI (hφ : ContDiff ℝ 2 φ)
+    (hg : ∀ i, ContDiff ℝ 2 (g i)) {x₀ : E} {y₀ : F} (hpli : LowerPLI g x₀ y₀)
+    (hssoc : LowerSSOC φ g x₀ y₀) :
+    ∃ δ > 0, ∀ (x : E) (y₁ y₂ : F) (lam₁ lam₂ : ι → ℝ), dist x x₀ < δ → dist y₁ y₀ < δ →
+      dist y₂ y₀ < δ → lam₁ ∈ Metric.thickening δ (lowerMultipliers φ g x₀ y₀) →
+      lam₂ ∈ Metric.thickening δ (lowerMultipliers φ g x₀ y₀) →
+      IsLowerKKT φ g x y₁ lam₁ → IsLowerKKT φ g x y₂ lam₂ → y₁ = y₂ := by
+  set Λ₀ := lowerMultipliers φ g x₀ y₀ with hΛ₀
+  have hK : IsCompact Λ₀ := isCompact_lowerMultipliers hpli
+  have hg1 : ∀ i, ContDiff ℝ 1 (g i) := fun i ↦ (hg i).of_le (by norm_num)
+  have hφd : ∀ p, DifferentiableAt ℝ φ p := fun p ↦ hφ.differentiable (by norm_num) p
+  have hgd : ∀ i p, DifferentiableAt ℝ (g i) p := fun i p ↦ (hg i).differentiable (by norm_num) p
+  -- the Hessian is affine in the multiplier
+  set Hφ := lowerHessian φ g x₀ y₀ 0
+  set Hg : ι → F →L[ℝ] StrongDual ℝ F := fun i ↦ lowerHessian (g i) g x₀ y₀ 0
+  have hHsum : ∀ lam v, lowerHessian φ g x₀ y₀ lam v v = Hφ v v + ∑ i, lam i * Hg i v v := by
+    intro lam v
+    rw [lowerHessian_eq_sum hφ hg]
+    simp [Hφ, Hg]
+  have hHc : Continuous fun p : (ι → ℝ) × F ↦ lowerHessian φ g x₀ y₀ p.1 p.2 p.2 := by
+    simp only [hHsum]
+    exact ((Hφ.continuous.comp continuous_snd).clm_apply continuous_snd).add
+      (continuous_finsetSum _ fun i _ ↦ ((continuous_apply i).comp continuous_fst).mul
+        (((Hg i).continuous.comp continuous_snd).clm_apply continuous_snd))
+  obtain ⟨c, hc, η, hη, hH⟩ :=
+    exists_pos_lowerSSOC_of_isCompact hK subset_rfl hHc.continuousOn hssoc
+  obtain ⟨R, hR0, hR⟩ := hK.isBounded.exists_pos_norm_le
+  -- the constants
+  set N : ℝ := (Fintype.card ι : ℝ) with hN
+  have hN0 : 0 ≤ N := Nat.cast_nonneg _
+  set D : ι → StrongDual ℝ F := fun i ↦ fderiv ℝ (fun z ↦ g i (x₀, z)) y₀ with hD
+  set Mg : ℝ := ∑ i, ‖Hg i‖ with hMg
+  have hMg0 : 0 ≤ Mg := Finset.sum_nonneg fun i _ ↦ ContinuousLinearMap.opNorm_nonneg _
+  set M : ℝ := ‖Hφ‖ + (R + 1) * Mg with hM
+  have hM0 : 0 ≤ M := by positivity
+  set Dn : ℝ := ∑ i, ‖D i‖ with hDn
+  have hDn0 : 0 ≤ Dn := Finset.sum_nonneg fun i _ ↦ ContinuousLinearMap.opNorm_nonneg _
+  set ε₁ : ℝ := c / (8 * (1 + N * (R + 1))) with hε₁
+  obtain ⟨δ₁, hδ₁, hexp⟩ :=
+    exists_pos_lowerLagrangian_expansion_uniform hφ hg x₀ y₀ (ε := ε₁) (by positivity)
+  set ε₂ : ℝ := η / (4 * (N * R + 1)) with hε₂
+  have hε₂0 : 0 < ε₂ := by positivity
+  obtain ⟨δ₂, hδ₂, hstr⟩ := exists_pos_abs_sub_le_of_contDiff hg1 (x₀, y₀) hε₂0
+  set K : ℝ := M + c / 4 + Dn + N * ε₂ with hKdef
+  have hK0 : 0 ≤ K := by positivity
+  set δ : ℝ := min (min δ₁ δ₂) (min (min (c / (4 * (Mg + 1))) (η / (4 * (K + 1)))) 1) with hδ
+  have hδ0 : 0 < δ := by positivity
+  have hδδ₁ : δ ≤ δ₁ := (min_le_left _ _).trans (min_le_left _ _)
+  have hδδ₂ : δ ≤ δ₂ := (min_le_left _ _).trans (min_le_right _ _)
+  have hδ₃ : δ ≤ c / (4 * (Mg + 1)) :=
+    (min_le_right _ _).trans ((min_le_left _ _).trans (min_le_left _ _))
+  have hδ₄ : δ ≤ η / (4 * (K + 1)) :=
+    (min_le_right _ _).trans ((min_le_left _ _).trans (min_le_right _ _))
+  have hδ1 : δ ≤ 1 := (min_le_right _ _).trans (min_le_right _ _)
+  refine ⟨δ, hδ0, fun x y₁ y₂ lam₁ lam₂ hx hy₁ hy₂ hl₁ hl₂ hk₁ hk₂ ↦ ?_⟩
+  obtain ⟨μ₁, hμ₁, hd₁⟩ := Metric.mem_thickening_iff.1 hl₁
+  obtain ⟨μ₂, hμ₂, hd₂⟩ := Metric.mem_thickening_iff.1 hl₂
+  by_contra hne
+  set v := y₂ - y₁ with hv
+  have hn : 0 < ‖v‖ := norm_pos_iff.2 (sub_ne_zero.2 (Ne.symm hne))
+  have hn2 : ‖v‖ < 2 * δ := by
+    calc ‖v‖ = ‖(y₂ - y₀) - (y₁ - y₀)‖ := by rw [hv, sub_sub_sub_cancel_right]
+      _ ≤ ‖y₂ - y₀‖ + ‖y₁ - y₀‖ := norm_sub_le _ _
+      _ < δ + δ := by rw [← dist_eq_norm, ← dist_eq_norm]; exact add_lt_add hy₂ hy₁
+      _ = 2 * δ := by ring
+  -- coordinatewise bounds on the multipliers
+  have hcoord : ∀ lam μ, μ ∈ Λ₀ → dist lam μ < δ → ∀ i,
+      |lam i - μ i| < δ ∧ |lam i| ≤ R + 1 ∧ 0 ≤ μ i ∧ μ i ≤ R := by
+    intro lam μ hμ hd i
+    have h1 : |lam i - μ i| < δ := by
+      have := (dist_le_pi_dist lam μ i).trans_lt hd
+      rwa [Real.dist_eq] at this
+    have h2 : |μ i| ≤ R := by
+      have := norm_le_pi_norm μ i
+      rw [Real.norm_eq_abs] at this
+      exact this.trans (hR μ hμ)
+    refine ⟨h1, ?_, hμ.2.1 i, (le_abs_self _).trans h2⟩
+    have := abs_add_le (μ i) (lam i - μ i)
+    rw [add_sub_cancel] at this
+    linarith
+  have hsumabs : ∀ lam μ, μ ∈ Λ₀ → dist lam μ < δ →
+      ε₁ * (1 + ∑ i, |lam i|) * ‖v‖ ^ 2 ≤ c / 8 * ‖v‖ ^ 2 := by
+    intro lam μ hμ hd
+    have h1 : ∑ i, |lam i| ≤ N * (R + 1) := by
+      calc ∑ i, |lam i| ≤ ∑ _i : ι, (R + 1) :=
+            Finset.sum_le_sum fun i _ ↦ (hcoord lam μ hμ hd i).2.1
+        _ = N * (R + 1) := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, hN]
+    have h2 : ε₁ * (1 + ∑ i, |lam i|) ≤ c / 8 := by
+      calc ε₁ * (1 + ∑ i, |lam i|) ≤ ε₁ * (1 + N * (R + 1)) := by gcongr
+        _ = c / 8 := by rw [hε₁]; field_simp
+    exact mul_le_mul_of_nonneg_right h2 (by positivity)
+  -- the Hessian estimates
+  have hHg : ∀ i, |Hg i v v| ≤ ‖Hg i‖ * ‖v‖ ^ 2 := fun i ↦ by
+    have := (Hg i).le_opNorm₂ v v
+    rw [Real.norm_eq_abs] at this
+    calc _ ≤ ‖Hg i‖ * ‖v‖ * ‖v‖ := this
+      _ = _ := by ring
+  have hHφ : |Hφ v v| ≤ ‖Hφ‖ * ‖v‖ ^ 2 := by
+    have := Hφ.le_opNorm₂ v v
+    rw [Real.norm_eq_abs] at this
+    calc _ ≤ ‖Hφ‖ * ‖v‖ * ‖v‖ := this
+      _ = _ := by ring
+  have hHb : ∀ lam μ, μ ∈ Λ₀ → dist lam μ < δ →
+      -(M * ‖v‖ ^ 2) ≤ lowerHessian φ g x₀ y₀ lam v v := by
+    intro lam μ hμ hd
+    rw [hHsum]
+    have h1 : |∑ i, lam i * Hg i v v| ≤ (R + 1) * Mg * ‖v‖ ^ 2 := by
+      calc _ ≤ ∑ i, |lam i * Hg i v v| := Finset.abs_sum_le_sum_abs _ _
+        _ ≤ ∑ i, (R + 1) * (‖Hg i‖ * ‖v‖ ^ 2) := Finset.sum_le_sum fun i _ ↦ by
+            rw [abs_mul]
+            exact mul_le_mul (hcoord lam μ hμ hd i).2.1 (hHg i) (abs_nonneg _) (by positivity)
+        _ = (R + 1) * Mg * ‖v‖ ^ 2 := by rw [hMg, ← Finset.mul_sum, ← Finset.sum_mul]; ring
+    have := neg_abs_le (∑ i, lam i * Hg i v v)
+    have := neg_abs_le (Hφ v v)
+    rw [hM]
+    linarith
+  have hHd : ∀ lam μ, μ ∈ Λ₀ → dist lam μ < δ →
+      lowerHessian φ g x₀ y₀ μ v v - δ * Mg * ‖v‖ ^ 2 ≤ lowerHessian φ g x₀ y₀ lam v v := by
+    intro lam μ hμ hd
+    rw [hHsum lam v, hHsum μ v]
+    have h1 : |∑ i, (lam i - μ i) * Hg i v v| ≤ δ * Mg * ‖v‖ ^ 2 := by
+      calc _ ≤ ∑ i, |(lam i - μ i) * Hg i v v| := Finset.abs_sum_le_sum_abs _ _
+        _ ≤ ∑ i, δ * (‖Hg i‖ * ‖v‖ ^ 2) := Finset.sum_le_sum fun i _ ↦ by
+            rw [abs_mul]
+            exact mul_le_mul (hcoord lam μ hμ hd i).1.le (hHg i) (abs_nonneg _) hδ0.le
+        _ = δ * Mg * ‖v‖ ^ 2 := by rw [hMg, ← Finset.mul_sum, ← Finset.sum_mul]; ring
+    have e : ∑ i, lam i * Hg i v v - ∑ i, μ i * Hg i v v = ∑ i, (lam i - μ i) * Hg i v v := by
+      rw [← Finset.sum_sub_distrib]
+      exact Finset.sum_congr rfl fun i _ ↦ by ring
+    have := neg_abs_le (∑ i, (lam i - μ i) * Hg i v v)
+    linarith
+  -- the second-order expansions at the two KKT points
+  have e₁ := hexp x y₁ y₂ lam₁ (hx.trans_le hδδ₁) (hy₁.trans_le hδδ₁) (hy₂.trans_le hδδ₁)
+  have e₂ := hexp x y₂ y₁ lam₂ (hx.trans_le hδδ₁) (hy₂.trans_le hδδ₁) (hy₁.trans_le hδδ₁)
+  rw [lowerLagrangianDeriv_eq_zero (hφd _) (fun i ↦ hgd i _) hk₁, zero_apply, sub_zero] at e₁
+  rw [lowerLagrangianDeriv_eq_zero (hφd _) (fun i ↦ hgd i _) hk₂, zero_apply, sub_zero] at e₂
+  have hvv : ∀ lam, lowerHessian φ g x₀ y₀ lam (y₁ - y₂) (y₁ - y₂) =
+      lowerHessian φ g x₀ y₀ lam v v := fun lam ↦ by
+    rw [hv, ← neg_sub y₂ y₁]
+    simp only [map_neg, neg_apply, neg_neg]
+  rw [hvv, norm_sub_rev y₁ y₂] at e₂
+  have hb₁ := (e₁.trans (hsumabs lam₁ μ₁ hμ₁ hd₁))
+  have hb₂ := (e₂.trans (hsumabs lam₂ μ₂ hμ₂ hd₂))
+  rw [abs_le] at hb₁ hb₂
+  -- the multiplier terms
+  set A₁ := ∑ i, lam₁ i * g i (x, y₂) with hA₁
+  set A₂ := ∑ i, lam₂ i * g i (x, y₁) with hA₂
+  have hL₁ : lowerLagrangian φ g x lam₁ y₂ - lowerLagrangian φ g x lam₁ y₁ =
+      φ (x, y₂) - φ (x, y₁) + A₁ := by
+    rw [lowerLagrangian_eq_of_isLowerKKT hk₁]
+    simp only [lowerLagrangian, hA₁]
+    ring
+  have hL₂ : lowerLagrangian φ g x lam₂ y₁ - lowerLagrangian φ g x lam₂ y₂ =
+      φ (x, y₁) - φ (x, y₂) + A₂ := by
+    rw [lowerLagrangian_eq_of_isLowerKKT hk₂]
+    simp only [lowerLagrangian, hA₂]
+    ring
+  have hA₁0 : A₁ ≤ 0 := sum_mul_nonpos_of_mem_lowerFeasible hk₂.1 hk₁.2.1
+  have hA₂0 : A₂ ≤ 0 := sum_mul_nonpos_of_mem_lowerFeasible hk₁.1 hk₂.2.1
+  have hlow : (lowerHessian φ g x₀ y₀ lam₁ v v + lowerHessian φ g x₀ y₀ lam₂ v v) / 2 -
+      c / 4 * ‖v‖ ^ 2 ≤ A₁ + A₂ := by
+    linarith [hb₁.1, hb₂.1]
+  -- `v` is almost critical for the midpoint multiplier
+  have hcritj : ∀ (lam μ : ι → ℝ) (ya yb : F), μ ∈ Λ₀ → dist lam μ < δ →
+      dist ya y₀ < δ → dist yb y₀ < δ → IsLowerKKT φ g x ya lam → yb ∈ lowerFeasible g x →
+      ∑ i, μ i * |D i (yb - ya)| ≤ -∑ i, lam i * g i (x, yb) +
+        δ * (Dn + N * ε₂) * ‖yb - ya‖ + R * N * ε₂ * ‖yb - ya‖ := by
+    intro lam μ ya yb hμ hd hya hyb hk hyb'
+    have hi : ∀ i, μ i * |D i (yb - ya)| ≤ -(lam i * g i (x, yb)) +
+        (δ * ‖D i‖ + δ * ε₂ + R * ε₂) * ‖yb - ya‖ := by
+      intro i
+      obtain ⟨hc1, -, hc3, hc4⟩ := hcoord lam μ hμ hd i
+      have hs := hstr i (x, yb) (x, ya)
+        (by rw [Prod.dist_eq]; exact max_lt (hx.trans_le hδδ₂) (hyb.trans_le hδδ₂))
+        (by rw [Prod.dist_eq]; exact max_lt (hx.trans_le hδδ₂) (hya.trans_le hδδ₂))
+      rw [fderiv_apply_sub_section (hgd i _), norm_prodMk_sub] at hs
+      have hDw : |D i (yb - ya)| ≤ ‖D i‖ * ‖yb - ya‖ := by
+        rw [← Real.norm_eq_abs]
+        exact (D i).le_opNorm _
+      exact mul_abs_le_of_abs_sub_le hs hDw (hk.2.1 i) (hk.2.2.1 i) (hyb' i) hc1.le hc3 hc4
+        hδ0.le hε₂0.le (norm_nonneg _)
+    calc ∑ i, μ i * |D i (yb - ya)| ≤ ∑ i, (-(lam i * g i (x, yb)) +
+          (δ * ‖D i‖ + δ * ε₂ + R * ε₂) * ‖yb - ya‖) := Finset.sum_le_sum fun i _ ↦ hi i
+      _ = _ := by
+        rw [Finset.sum_add_distrib, Finset.sum_neg_distrib, ← Finset.sum_mul,
+          Finset.sum_add_distrib, Finset.sum_add_distrib, ← Finset.mul_sum]
+        simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, ← hN, ← hDn]
+        ring
+  have hc₁ := hcritj lam₁ μ₁ y₁ y₂ hμ₁ hd₁ hy₁ hy₂ hk₁ hk₂.1
+  have hc₂ := hcritj lam₂ μ₂ y₂ y₁ hμ₂ hd₂ hy₂ hy₁ hk₂ hk₁.1
+  have hDneg : ∀ i, |D i (y₁ - y₂)| = |D i v| := fun i ↦ by
+    rw [hv, ← neg_sub y₂ y₁, map_neg, abs_neg]
+  simp only [hDneg, norm_sub_rev y₁ y₂] at hc₂
+  rw [← hA₁] at hc₁
+  rw [← hA₂] at hc₂
+  set μ := (1 / 2 : ℝ) • μ₁ + (1 / 2 : ℝ) • μ₂ with hμ
+  have hμΛ : μ ∈ Λ₀ := convex_lowerMultipliers hμ₁ hμ₂ (by norm_num) (by norm_num) (by norm_num)
+  have hμsum : ∑ i, μ i * |D i v| =
+      (∑ i, μ₁ i * |D i v| + ∑ i, μ₂ i * |D i v|) / 2 := by
+    simp only [hμ, Pi.add_apply, Pi.smul_apply, smul_eq_mul, add_mul, Finset.sum_add_distrib,
+      mul_assoc, ← Finset.mul_sum]
+    ring
+  have hμH : lowerHessian φ g x₀ y₀ μ v v =
+      (lowerHessian φ g x₀ y₀ μ₁ v v + lowerHessian φ g x₀ y₀ μ₂ v v) / 2 := by
+    simp only [hHsum, hμ, Pi.add_apply, Pi.smul_apply, smul_eq_mul, add_mul,
+      Finset.sum_add_distrib, mul_assoc, ← Finset.mul_sum]
+    ring
+  have hup : -(A₁ + A₂) ≤ (M + c / 4) * ‖v‖ ^ 2 := by
+    have := hHb lam₁ μ₁ hμ₁ hd₁
+    have := hHb lam₂ μ₂ hμ₂ hd₂
+    linarith
+  have hcrit : ∑ i, μ i * |D i v| < η * ‖v‖ := by
+    have h1 : (M + c / 4) * ‖v‖ ^ 2 ≤ 2 * δ * (M + c / 4) * ‖v‖ := by
+      have : ‖v‖ ^ 2 ≤ 2 * δ * ‖v‖ := by
+        rw [sq]
+        exact mul_le_mul_of_nonneg_right hn2.le hn.le
+      calc _ ≤ (M + c / 4) * (2 * δ * ‖v‖) := mul_le_mul_of_nonneg_left this (by positivity)
+        _ = _ := by ring
+    have h2 : δ * K ≤ η / 4 := by
+      calc δ * K ≤ η / (4 * (K + 1)) * K := mul_le_mul_of_nonneg_right hδ₄ hK0
+        _ ≤ η / 4 := by
+          rw [div_mul_eq_mul_div, div_le_div_iff₀ (by positivity) (by norm_num)]
+          linarith
+    have h3 : R * N * ε₂ ≤ η / 4 := by
+      rw [hε₂, mul_div_assoc', div_le_div_iff₀ (by positivity) (by norm_num)]
+      linarith
+    have h4 : δ * K * ‖v‖ ≤ η / 4 * ‖v‖ := mul_le_mul_of_nonneg_right h2 hn.le
+    have h5 : R * N * ε₂ * ‖v‖ ≤ η / 4 * ‖v‖ := mul_le_mul_of_nonneg_right h3 hn.le
+    rw [hμsum]
+    rw [hKdef] at h4
+    linarith [mul_pos hη hn]
+  have hpos := hH μ hμΛ v hcrit
+  have hd₁' := hHd lam₁ μ₁ hμ₁ hd₁
+  have hd₂' := hHd lam₂ μ₂ hμ₂ hd₂
+  have hδMg : δ * Mg ≤ c / 4 := by
+    calc δ * Mg ≤ c / (4 * (Mg + 1)) * Mg := mul_le_mul_of_nonneg_right hδ₃ hMg0
+      _ ≤ c / 4 := by
+        rw [div_mul_eq_mul_div, div_le_div_iff₀ (by positivity) (by norm_num)]
+        linarith
+  have h6 : δ * Mg * ‖v‖ ^ 2 ≤ c / 4 * ‖v‖ ^ 2 := mul_le_mul_of_nonneg_right hδMg (by positivity)
+  have := mul_pos hc (pow_pos hn 2)
+  linarith
 
 /-- Second-order sufficiency: under (SSOC), a KKT point `ȳ` is a strict local solution of the
 follower's problem at `x̄` [Dempe 2002, p. 101]. -/
@@ -587,34 +996,35 @@ theorem exists_pos_lt_of_lowerSSOC (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDi
 
 variable [FiniteDimensional ℝ E]
 
-/-- **Thm. 4.4 of [Dempe 2002]** (Kojima), in the version proved in the book (pp. 101–104): if
-`ȳ` is a KKT point of the follower's problem at `x̄` at which (LICQ) and (SSOC) hold, then `ȳ` is
-strongly stable. The data are `C²`. -/
-theorem isLowerStronglyStable (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i))
+/-- **Thm. 4.4 of [Dempe 2002]** (Kojima): if `ȳ` is a KKT point of the follower's problem at
+`x̄` at which (MFCQ) (in its dual form (PLI)) and (SSOC) hold, then `ȳ` is strongly stable. The
+data are `C²`. -/
+theorem isLowerStronglyStable_of_lowerPLI (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i))
     {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ} (hkkt : IsLowerKKT φ g x₀ y₀ lam₀)
-    (hlicq : LowerLICQ g x₀ y₀) (hssoc : LowerSSOC φ g x₀ y₀) :
+    (hpli : LowerPLI g x₀ y₀) (hssoc : LowerSSOC φ g x₀ y₀) :
     IsLowerStronglyStable φ g x₀ y₀ := by
   classical
   have hφ1 : ContDiff ℝ 1 φ := hφ.of_le (by norm_num)
   have hg1 : ∀ i, ContDiff ℝ 1 (g i) := fun i ↦ (hg i).of_le (by norm_num)
   have hy₀ : y₀ ∈ lowerFeasible g x₀ := hkkt.1
-  have hpli : LowerPLI g x₀ y₀ := lowerPLI_of_lowerLICQ hkkt.1 hlicq
+  set Λ₀ := lowerMultipliers φ g x₀ y₀ with hΛ₀
+  have hΛ₀c : IsCompact Λ₀ := isCompact_lowerMultipliers hpli
   -- uniqueness of nearby KKT points
-  obtain ⟨δ₁, hδ₁, huniq⟩ := exists_pos_eq_of_isLowerKKT hφ hg hkkt hssoc
-  -- near `(x̄, ȳ)`, (PLI) holds and all multipliers are close to `λ⁰`
+  obtain ⟨δ₁, hδ₁, huniq⟩ := exists_pos_eq_of_isLowerKKT_of_lowerPLI hφ hg hpli hssoc
+  have hthick : Metric.cthickening (δ₁ / 2) Λ₀ ⊆ Metric.thickening δ₁ Λ₀ :=
+    Metric.cthickening_subset_thickening' hδ₁ (by linarith) _
+  -- near `(x̄, ȳ)`, (PLI) holds and all multipliers are close to `Λ(x̄, ȳ)`
   have hΛ : ∀ᶠ p : E × F in 𝓝 (x₀, y₀), LowerPLI g p.1 p.2 ∧
-      lowerMultipliers φ g p.1 p.2 ⊆ Metric.ball lam₀ (δ₁ / 2) :=
+      lowerMultipliers φ g p.1 p.2 ⊆ Metric.thickening (δ₁ / 2) Λ₀ :=
     (eventually_lowerPLI hg1 hpli).and (upperHemicontinuousAt_lowerMultipliers hφ1 hg1 hpli _
-      Metric.isOpen_ball fun lam hlam ↦ by
-        rw [lowerMultipliers_subsingleton_of_lowerLICQ hlicq hlam hkkt]
-        exact Metric.mem_ball_self (by positivity))
+      Metric.isOpen_thickening (Metric.self_subset_thickening (by positivity) _))
   obtain ⟨δ₂, hδ₂, hΛ⟩ := Metric.eventually_nhds_iff.1 hΛ
   set δ := min δ₁ δ₂ with hδ
   have hδ0 : 0 < δ := lt_min hδ₁ hδ₂
   have hδδ₁ : δ ≤ δ₁ := min_le_left _ _
   have hkktloc : ∀ x z, dist x x₀ < δ → dist z y₀ < δ → z ∈ lowerFeasible g x →
       IsLocalMinOn (fun w ↦ φ (x, w)) (lowerFeasible g x) z →
-      ∃ lam, dist lam lam₀ < δ₁ / 2 ∧ IsLowerKKT φ g x z lam := by
+      ∃ lam, lam ∈ Metric.thickening (δ₁ / 2) Λ₀ ∧ IsLowerKKT φ g x z lam := by
     intro x z hx hz hzG hmin
     have hp := hΛ (y := (x, z)) (by
       rw [Prod.dist_eq]
@@ -711,24 +1121,23 @@ theorem isLowerStronglyStable (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff �
   have hsδ : ∀ x ∈ U, dist (s x) y₀ < δ := fun x hx ↦
     (Metric.mem_ball.1 (hsU x hx).2.2).trans hρδ
   set μ : E → ι → ℝ := fun x ↦
-    if h : ∃ lam, dist lam lam₀ < δ₁ / 2 ∧ IsLowerKKT φ g x (s x) lam then h.choose else lam₀
-    with hμ
-  have hμb : ∀ x, dist (μ x) lam₀ ≤ δ₁ / 2 := fun x ↦ by
-    by_cases h : ∃ lam, dist lam lam₀ < δ₁ / 2 ∧ IsLowerKKT φ g x (s x) lam
+    if h : ∃ lam, lam ∈ Metric.thickening (δ₁ / 2) Λ₀ ∧ IsLowerKKT φ g x (s x) lam then
+      h.choose else lam₀ with hμ
+  have hμb : ∀ x, μ x ∈ Metric.cthickening (δ₁ / 2) Λ₀ := fun x ↦ by
+    by_cases h : ∃ lam, lam ∈ Metric.thickening (δ₁ / 2) Λ₀ ∧ IsLowerKKT φ g x (s x) lam
     · simp only [hμ, dif_pos h]
-      exact h.choose_spec.1.le
+      exact Metric.thickening_subset_cthickening _ _ h.choose_spec.1
     · simp only [hμ, dif_neg h]
-      rw [dist_self]
-      positivity
+      exact Metric.self_subset_cthickening _ hkkt
   have hμU : ∀ x ∈ U, IsLowerKKT φ g x (s x) (μ x) := fun x hx ↦ by
     have h := hkktloc x (s x) (hsU x hx).1 (hsδ x hx) (hsU x hx).2.1.1.1 (hsmin x hx)
     simp only [hμ, dif_pos h]
     exact h.choose_spec.2
   -- uniqueness of local minimizers near `ȳ`
-  have hsuniq : ∀ x ∈ U, ∀ z, dist z y₀ < δ₁ → ∀ lam, dist lam lam₀ < δ₁ →
+  have hsuniq : ∀ x ∈ U, ∀ z, dist z y₀ < δ₁ → ∀ lam ∈ Metric.thickening δ₁ Λ₀,
       IsLowerKKT φ g x z lam → z = s x := fun x hx z hz lam hlam hk ↦
     huniq x z (s x) lam (μ x) ((hsU x hx).1.trans_le hδδ₁) hz ((hsδ x hx).trans_le hδδ₁) hlam
-      ((hμb x).trans_lt (by linarith)) hk (hμU x hx)
+      (hthick (hμb x)) hk (hμU x hx)
   refine ⟨δ, hδ0, U, hUx₀, s, ?_, ?_, fun x hx ↦ ⟨(hsδ x hx), (hsU x hx).2.1.1.1, hsmin x hx,
     fun z hz hzG hzmin ↦ ?_⟩⟩
   · exact hsol₀' _ (hsU x₀ (mem_of_mem_nhds hUx₀)).2.1
@@ -736,8 +1145,8 @@ theorem isLowerStronglyStable (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff �
     refine hUo.continuousOn_iff.2 fun x₁ hx₁ ↦ tendsto_of_subseq_tendsto fun ns hns ↦ ?_
     have hev : ∀ᶠ n in atTop, ns n ∈ U := hns (hUo.mem_nhds hx₁)
     obtain ⟨⟨z, lam⟩, ⟨hz, hlam⟩, φ', hmono, hlim⟩ :=
-      ((isCompact_closedBall y₀ ρ).prod (isCompact_closedBall lam₀ (δ₁ / 2))).tendsto_subseq
-        (x := fun n ↦ (s (ns n), μ (ns n))) fun n ↦ ⟨hsK _, Metric.mem_closedBall.2 (hμb _)⟩
+      ((isCompact_closedBall y₀ ρ).prod hΛ₀c.cthickening).tendsto_subseq
+        (x := fun n ↦ (s (ns n), μ (ns n))) fun n ↦ ⟨hsK _, hμb _⟩
     have hl1 : Tendsto (fun n ↦ s (ns (φ' n))) atTop (𝓝 z) :=
       (continuous_fst.tendsto _).comp hlim
     have hl2 : Tendsto (fun n ↦ μ (ns (φ' n))) atTop (𝓝 lam) :=
@@ -749,13 +1158,34 @@ theorem isLowerStronglyStable (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff �
       (isClosed_graph_lowerMultipliers hφ1 hg1).mem_of_tendsto ht
         ((hmono.tendsto_atTop.eventually hev).mono fun n hn ↦ hμU _ hn)
     have hzs := hsuniq x₁ hx₁ z ((Metric.mem_closedBall.1 hz).trans_lt (hρδ.trans_le hδδ₁))
-      lam ((Metric.mem_closedBall.1 hlam).trans_lt (by linarith)) hk
+      lam (hthick hlam) hk
     exact ⟨φ', hzs ▸ hl1⟩
   · obtain ⟨lam, hlam, hk⟩ := hkktloc x z (hsU x hx).1 hz hzG hzmin
-    exact hsuniq x hx z (hz.trans_le hδδ₁) lam (by linarith) hk
+    exact hsuniq x hx z (hz.trans_le hδδ₁) lam
+      (Metric.thickening_mono (by linarith) _ hlam) hk
+
+/-- Thm. 4.4 of [Dempe 2002] in the version proved in the book (pp. 101–104): if `ȳ` is a KKT
+point of the follower's problem at `x̄` at which (LICQ) and (SSOC) hold, then `ȳ` is strongly
+stable. -/
+theorem isLowerStronglyStable (hφ : ContDiff ℝ 2 φ) (hg : ∀ i, ContDiff ℝ 2 (g i))
+    {x₀ : E} {y₀ : F} {lam₀ : ι → ℝ} (hkkt : IsLowerKKT φ g x₀ y₀ lam₀)
+    (hlicq : LowerLICQ g x₀ y₀) (hssoc : LowerSSOC φ g x₀ y₀) :
+    IsLowerStronglyStable φ g x₀ y₀ :=
+  isLowerStronglyStable_of_lowerPLI hφ hg hkkt (lowerPLI_of_lowerLICQ hkkt.1 hlicq) hssoc
 
 /-- Thm. 4.4 of [Dempe 2002] as stated in the book: a local solution `ȳ` of the follower's
-problem at `x̄` at which (LICQ) and (SSOC) hold is strongly stable. -/
+problem at `x̄` at which (MFCQ) (in its dual form (PLI)) and (SSOC) hold is strongly stable. -/
+theorem isLowerStronglyStable_of_isLocalMinOn_of_lowerPLI (hφ : ContDiff ℝ 2 φ)
+    (hg : ∀ i, ContDiff ℝ 2 (g i)) {x₀ : E} {y₀ : F} (hy₀ : y₀ ∈ lowerFeasible g x₀)
+    (hmin : IsLocalMinOn (fun z ↦ φ (x₀, z)) (lowerFeasible g x₀) y₀)
+    (hpli : LowerPLI g x₀ y₀) (hssoc : LowerSSOC φ g x₀ y₀) :
+    IsLowerStronglyStable φ g x₀ y₀ := by
+  obtain ⟨lam₀, hkkt⟩ := exists_isLowerKKT_of_isLocalMinOn hy₀ hmin
+    (((hφ.of_le (by norm_num)).comp (contDiff_prodMk_right x₀)).differentiable one_ne_zero y₀)
+    (fun i ↦ (((hg i).of_le (by norm_num)).comp (contDiff_prodMk_right x₀)).contDiffAt) hpli
+  exact isLowerStronglyStable_of_lowerPLI hφ hg hkkt hpli hssoc
+
+/-- Thm. 4.4 of [Dempe 2002] for a local solution `ȳ` at which (LICQ) and (SSOC) hold. -/
 theorem isLowerStronglyStable_of_isLocalMinOn (hφ : ContDiff ℝ 2 φ)
     (hg : ∀ i, ContDiff ℝ 2 (g i)) {x₀ : E} {y₀ : F} (hy₀ : y₀ ∈ lowerFeasible g x₀)
     (hmin : IsLocalMinOn (fun z ↦ φ (x₀, z)) (lowerFeasible g x₀) y₀)
