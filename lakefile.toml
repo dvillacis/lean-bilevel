@@ -1,6 +1,8 @@
 name = "bileveloptimization"
 version = "0.1.0"
 defaultTargets = ["BilevelOptimization"]
+# Dependents download the compiled library from the GitHub release of the pinned tag.
+preferReleaseBuild = true
 
 [leanOptions]
 pp.unicode.fun = true
@@ -10,7 +12,7 @@ relaxedAutoImplicit = false
 [[require]]
 name = "variationalanalysis"
 git = "https://github.com/dvillacis/lean-variational"
-rev = "f5405b14faaacd280e37ca0ba6535bb68ad7d179"
+rev = "v0.1.0"
 
 [[lean_lib]]
 name = "BilevelOptimization"
